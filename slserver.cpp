@@ -292,9 +292,7 @@ void* SlServer::recv_data(void* data) {
 								if (!strncmp(cp + 4,"ping:",5))
 								{
 									char _tmps[32];
-									strncpy_s(_tmps, "pong:", 5);
-									strcat_s(_tmps, cp + 9);
-
+									sprintf_s(_tmps,"pong:%s",cp + 9);
 									pointer->send(p->element->uid, 3, _tmps);
 								}
 								break;

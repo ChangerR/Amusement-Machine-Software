@@ -105,7 +105,7 @@ int Serial::write(const char* buf,int len) {
 }
 
 int Serial::read() {
-	int nWrite = MAX_SERIALBUFFER_SIZE - _wpos;	
+	int nWrite = MAX_SERIALBUFFER_SIZE - _wpos - 1;	
 	int len = 0;
 	if(!running)
 		return -1;
@@ -115,6 +115,7 @@ int Serial::read() {
 		
 	_wpos += len;
 	//sched_yield();
+	_buffer[_wpos] = 0;
 	usleep(1);	
 	return _wpos;
 }
@@ -151,8 +152,9 @@ int Serial::readline(char* buf) {
 				break;
 		}
 	}while(running&&_buffer[nRead] != '\n'&&read() != -1);
-	
+		
 	if(_buffer[nRead] == '\n') {
+		//LOGOUT("+++info+++ %s %d\n",_buffer,nRead);
 		memcpy(buf,_buffer,nRead);
 		if (buf[nRead - 1] == '\r') {
 			buf[nRead - 1] = 0;

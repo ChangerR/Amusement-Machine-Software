@@ -1,11 +1,14 @@
 #include "gopro4.h"
 #include "slconfig.h"
 #include "slserver.h"
-#include <unistd.h>
 #ifdef SLSERVER_WIN32
 #include <windows.h>
 #endif
 #ifdef SLSERVER_LINUX
+#include <time.h>
+#include <sys/time.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
 #include <arpa/inet.h>
 #endif
 #include <string.h>
@@ -400,15 +403,46 @@ bool gopro4::test_is_work()
 	struct sockaddr_in _sockaddr;
 	SOCKET _sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
+ 
 	if (_sock == INVALID_SOCKET) {
 		LOGOUT("***ERROR*** can not open socket\n");
 		return false;
 	}
-
+	
 	_sockaddr.sin_family = AF_INET;
 	_sockaddr.sin_addr.s_addr = inet_addr(GOPRO4_IP);
 	_sockaddr.sin_port = htons(80);
 
+#ifdef SLSERVER_LINUX
+	unsigned long ul = 1;
+	timeval tm;
+	fd_set set;
+	ioctl(_sock, FIONBIO, &ul); 
+	int error=-1, len;
+	len = sizeof(int);
+	bool ret = false;
+	
+	if( connect(_sock, (struct sockaddr *)&_sockaddr, sizeof(_sockaddr)) == -1)
+	{
+		tm.tv_sec = 1;
+		tm.tv_usec = 0;
+		FD_ZERO(&set);
+		FD_SET(_sock, &set);
+		if( select(_sock+1, NULL, &set, NULL, &tm) > 0)
+		{
+			getsockopt(_sock, SOL_SOCKET, SO_ERROR, &error, (socklen_t *)&len);
+			if(error == 0) 
+				ret = true;
+			else 
+				ret = false;
+		} else 
+			ret = false;
+	}else 
+		ret = true;
+	
+	closesocket(_sock);
+	return ret;
+#else
 	if (SOCKET_ERROR == connect(_sock, (struct sockaddr*)&_sockaddr, sizeof(_sockaddr))) {
 		LOGOUT("***ERROR*** connect GOPRO4 error\n");
 		return false;
@@ -418,6 +452,7 @@ bool gopro4::test_is_work()
 	closesocket(_sock);
 
 	return true;
+#endif
 }
 
 gopro4::Client::Client() {
