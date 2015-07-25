@@ -1,6 +1,7 @@
 #include "gopro4.h"
 #include "slconfig.h"
 #include "slserver.h"
+#include <unistd.h>
 #ifdef SLSERVER_WIN32
 #include <windows.h>
 #endif
@@ -356,16 +357,16 @@ bool gopro4::gopro_wol(const char* ip, unsigned short port) {
 	sock = socket(AF_INET, SOCK_DGRAM, 0);
 	if (sock == INVALID_SOCKET)
 	{
-		printf("Socket create error: %d\n", GetLastError());
+		printf("Socket create error: %d\n", errno);
 		return false;
 	}
 
 	//设置为广播发送
-	BOOL bOptVal = TRUE;
-	int iOptLen = sizeof(BOOL);
+	bool bOptVal = true;
+	int iOptLen = sizeof(bool);
 	if (setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (char*)&bOptVal, iOptLen) == SOCKET_ERROR)
 	{
-		fprintf(stderr, "setsockopt error: %d\n", WSAGetLastError());
+		fprintf(stderr, "setsockopt error: %d\n", errno);
 		closesocket(sock);
 
 		return false;
@@ -385,7 +386,7 @@ bool gopro4::gopro_wol(const char* ip, unsigned short port) {
 	memcpy(magicpacket + 54, _mac + 6, 48);
 	//发送Magic Packet
 	if (sendto(sock, (const char *)magicpacket, 102, 0, (const struct sockaddr *)&to, sizeof(to)) == SOCKET_ERROR) {
-		printf("Magic packet send error: %d", WSAGetLastError());
+		printf("Magic packet send error: %d", errno);
 	}
 		
 	printf("Magic packet send!");

@@ -23,6 +23,8 @@ typedef char s8;
 #ifdef SLSERVER_LINUX
 #define strcpy_s strcpy
 #define sprintf_s sprintf
+#define strncpy_s strncpy
+#define strcat_s strcat
 #define __cdecl
 typedef int SOCKET;
 #define INVALID_SOCKET -1

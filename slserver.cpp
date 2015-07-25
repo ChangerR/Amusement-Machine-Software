@@ -15,6 +15,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
+#include <sys/ioctl.h>
+#include <arpa/inet.h>
+#include <net/if.h> 
+#include <netinet/if_ether.h> 
 #endif
 
 #ifdef SLSERVER_WIN32
@@ -396,6 +400,58 @@ bool SlServer::getMacAddr(const char* ip, unsigned char* mac) {
 		return false;
 	}
 	memcpy(mac, macBuf, macLen);
+	return true;
+}
+#endif
+
+#ifdef SLSERVER_LINUX
+bool SlServer::getMacAddr(const char* ip, unsigned char* mac) {
+	int sd;
+	struct arpreq arpreq;
+	struct sockaddr_in *sin;
+	struct in_addr ina;
+	unsigned char *hw_addr;
+
+	int rc;
+
+	sd = socket(AF_INET, SOCK_DGRAM, 0);
+	if (sd < 0) {
+		printf("socket() error\n");
+		return false;
+	}
+
+	/* Try to find an entry in arp cache for the ip address specified */
+
+
+	printf("Find arp entry for IP : %s\n", ip);
+
+	/*you must add this becasue some system will return "Invlid argument"
+	because some argument isn't zero */
+
+	memset(&arpreq, 0, sizeof(struct arpreq));
+
+	sin = (struct sockaddr_in *) &arpreq.arp_pa;
+	memset(sin, 0, sizeof(struct sockaddr_in));
+	sin->sin_family = AF_INET;
+	ina.s_addr = inet_addr(ip);
+	memcpy(&sin->sin_addr, (char *)&ina, sizeof(struct in_addr));
+
+	strcpy(arpreq.arp_dev, "wlan0");
+
+	rc = ioctl(sd, SIOCGARP, &arpreq);
+
+	if (rc < 0) {
+		printf("Entry not available in cache...\n");
+		return false;
+	} else {
+		printf("\nentry has been successfully retreived\n");
+		hw_addr = (unsigned char *) arpreq.arp_ha.sa_data;
+
+		printf("HWAddr found : %02x:%02x:%02x:%02x:%02x:%02x\n",
+		       hw_addr[0], hw_addr[1], hw_addr[2], hw_addr[3], hw_addr[4], hw_addr[5]);
+		
+		memcpy(mac,hw_addr,6);
+	}
 	return true;
 }
 #endif
