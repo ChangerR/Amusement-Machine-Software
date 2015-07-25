@@ -213,7 +213,7 @@ int Serial::println(const char* s,...) {
 	return write(buf,nWrite+1);
 }
 
-	
+#ifndef BBBLACK_GPIO30_RESET	
 bool Serial::touchForCDCReset() {
 	if(begin(_B115200) == false)
 		return false;
@@ -227,4 +227,37 @@ bool Serial::touchForCDCReset() {
 	close();
 	return true;
 }
+#else
+bool Serial::touchForCDCReset() {
+	int fd;
+	int i=0;
+	fd = open("/sys/class/gpio/export",O_WRONLY);
+	if(fd == -1)
+		return false;
+	write(fd,"30",2);
+	close(fd);
+	
+	fd = open("/sys/class/gpio/gpio30/direction",O_WRONLY);
+	if(fd == -1)
+		return false;
+	write(fd,"out",3);
+	close(fd);
+	
+	fd = open("/sys/class/gpio/gpio30/value",O_WRONLY);
+	if(fd == -1)
+		return false;
+	write(fd,"0",1);
+	usleep(10);
+	write(fd,"1",1);
+	close(fd);
+	
+	fd = open("/sys/class/gpio/unexport",O_WRONLY);
+	if(fd == -1)
+		return false;
+	write(fd,"30",2);
+	close(fd);
+	return true;
+}	
+#endif
+
 #endif

@@ -31,5 +31,5 @@ typedef int SOCKET;
 #define SOCKET_ERROR -1
 #define closesocket ::close
 #endif
-
+#define BBBLACK_GPIO30_RESET
 #endif
