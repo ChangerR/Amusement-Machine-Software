@@ -354,8 +354,13 @@ bool gopro4::gopro_wol(const char* ip, unsigned short port) {
 
 	LOGOUT("***INFO*** gopro_wol\n");
 
-	if (SlServer::getMacAddr(ip, _mac) == false)
-		return false;
+	if (_init_mac) {
+		memcpy(_mac, _smac, 6);
+	}
+	else {
+		if (SlServer::getMacAddr(ip, _mac) == false)
+			return false;
+	}
 
 	sock = socket(AF_INET, SOCK_DGRAM, 0);
 	if (sock == INVALID_SOCKET)
@@ -392,7 +397,7 @@ bool gopro4::gopro_wol(const char* ip, unsigned short port) {
 		printf("Magic packet send error: %d", errno);
 	}
 		
-	printf("Magic packet send!");
+	printf("***INFO*** Magic packet send!\n");
 
 	closesocket(sock);
 	return true;
@@ -454,6 +459,10 @@ bool gopro4::test_is_work()
 	return true;
 #endif
 }
+
+bool gopro4::_init_mac = false;
+
+unsigned char gopro4::_smac[6];
 
 gopro4::Client::Client() {
 	uid = -1;

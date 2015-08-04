@@ -36,6 +36,9 @@ public:
 	static bool gopro_wol(const char* ip, unsigned short port);
 
 	bool test_is_work();
+
+	static bool _init_mac;
+	static unsigned char _smac[];
 private:
 	SOCKADDR_IN _heartbeat_addr;
 	int _heart_len;
@@ -66,6 +69,7 @@ private:
 	pthread_t _trans_thread;
 	char* _recv_buffer;
 	HttpUrlConnection _conn;
+
 };
 
 #endif

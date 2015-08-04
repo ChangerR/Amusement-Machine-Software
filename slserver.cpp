@@ -57,7 +57,7 @@ SlServer::SlServer(int p,ServerConfig* pconfig) {
 	port = p;
 	server = INVALID_SOCKET;
 	_config = pconfig;
-	_gopro4 = NULL;
+	_planqueue = new GoproPlanQueue;
 #ifdef SLSERVER_WIN32
 	if(socket_init <= 0) {
 		socket_init = 0;
@@ -74,14 +74,13 @@ SlServer::~SlServer() {
 		winsock_close();
 	}
 #endif
+	if (_planqueue)
+		delete _planqueue;
 	if(poilt) {
 		poilt->stop();
 		delete poilt;
 	}
-	if (_gopro4)
-	{
-		delete _gopro4;
-	}
+
 }
 
 
@@ -89,7 +88,6 @@ bool SlServer::init(const char* p) {
 	struct sockaddr_in sockaddr;
 	
 	poilt = new slrov(this);
-	_gopro4 = new gopro4;
 
 	if(!poilt->start(p)) {
 		return false;
@@ -121,14 +119,11 @@ bool SlServer::init(const char* p) {
 		LOGOUT("socket listen failed,please check\n");
 		return false;
 	}
-	
-	if (_gopro4->init() == false)
-	{
-		LOGOUT("***ERROR*** gopro init error\n");
-		return false;
-	}
 
 	LOGOUT("***INFO*** Now We Listen at port %d\n", port);
+
+	gopro4::_init_mac = _config->getMacAddress("GOPRO_MAC", gopro4::_smac);
+
 	return true;
 }
 
@@ -136,6 +131,9 @@ bool SlServer::start() {
 	running = true;
 	watch_running = true;
 	
+	if (!_planqueue->start())
+		return false;
+
 	if (0 != pthread_create(&_thread, NULL, SlServer::recv_data, (void*)this)) {
 		printf("error when create pthread,%d\n", errno);
 		return false;
@@ -220,7 +218,7 @@ void* SlServer::recv_data(void* data) {
 		for(list<SlClient*>::node * p = pointer->clients.begin(); p != pointer->clients.end();p = p->next) {
 			
 			if(p->element->client_state == CLIENT_DEAD) {
-				pointer->_gopro4->removeClient(p->element->uid);
+				pointer->_planqueue->_gopro4->removeClient(p->element->uid);
 				list<SlClient*>::node* temp = p->prev;
 				p->element->close();
 				delete p->element;
@@ -299,29 +297,13 @@ void* SlServer::recv_data(void* data) {
 								}
 								break;
 							case '9':
-								if (strcmp(cp + 4, "gopro_power_on") == 0) {
-
-									pointer->_gopro4->gopro_wol(GOPRO4_IP, GOPRO4_WOL);
-
-								}else if (pointer->_gopro4->test_is_work())
-								{
-									if (strcmp(cp + 4, "start") == 0) {
-										pointer->_gopro4->start();
-										LOGOUT("***INFO*** gopro start\n");
-									}
-									else if (strcmp(cp + 4, "stop") == 0) {
-										LOGOUT("***INFO*** gopro stop\n");
-										pointer->_gopro4->stop();
-									}
-									else if (strcmp(cp + 4, "listen") == 0) {
-										LOGOUT("***INFO*** gopro listen:%s\n", p->element->ip);
-										pointer->_gopro4->addClient(p->element->uid, p->element->ip);
-										pointer->send(p->element->uid, 2, "stream_on");
-									}
-									else{
-										pointer->_gopro4->runCommand(cp + 4);
-									}
+								if (strcmp(cp + 4, "listen") == 0) {
+									LOGOUT("***INFO*** gopro listen:%s\n", p->element->ip);
+									pointer->_planqueue->_gopro4->addClient(p->element->uid, p->element->ip);
+									pointer->send(p->element->uid, 2, "stream_on");
 								}
+								else
+									pointer->_planqueue->addPlan(cp + 4);
 								break;
 							default:
 								break;

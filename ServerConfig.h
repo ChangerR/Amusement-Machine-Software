@@ -107,9 +107,10 @@ public:
 	bool getIntHex(const char*,int*);
 	bool getString(const char*,char*);
 	bool getFloat(const char*,float*);
-	
+	bool getMacAddress(const char*, unsigned char*);
+
 	void setBoolean(const char*,bool);
-	void  setInt(const char*,int);
+	void setInt(const char*,int);
 	void setIntHex(const char*,int);
 	void setString(const char*,const char*);
 	void setFloat(const char*,float);

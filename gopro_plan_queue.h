@@ -3,8 +3,7 @@
 #include "slconfig.h"
 #include "list.h"
 #include <pthread.h>
-
-typedef int (*PlanFunc)(const char*);
+#include "gopro4.h"
 
 class GoproPlanQueue {
 public:
@@ -14,20 +13,22 @@ public:
 	bool start();
 	void stop();
 	
-	int addPlan(PlanFunc func,const char* _arg);
+	int addPlan(const char* name);
 	bool getRunningState();
 	
 	static void* __cdecl _run_queue(void*);
 	
 private:
 	struct _plan {
-		PlanFunc _func;
-		char arg[128];
+		char name[128];
 	};
 	
 	list<_plan*> _queue;
 	pthread_t _thread;
 	bool _running;
+	gopro4* _gopro4;
+	pthread_mutex_t _lock;
+	friend class SlServer;
 };
 
 #endif

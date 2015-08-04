@@ -1,4 +1,4 @@
-#include "gopro_plan_queue.h"
+ #include "gopro_plan_queue.h"
 
 #ifdef SLSERVER_WIN32
 #include <windows.h>
@@ -6,10 +6,13 @@
 
 GoproPlanQueue::GoproPlanQueue() {
 	_running = false;
+	_gopro4 = new gopro4;
 }
 
 GoproPlanQueue::~GoproPlanQueue() {
 	stop();
+	if (_gopro4)
+		delete _gopro4;
 }
 
 bool GoproPlanQueue::start() {
@@ -19,11 +22,18 @@ bool GoproPlanQueue::start() {
 	
 	_running = true;
 	
+	if (_gopro4->init() == false)
+	{
+		LOGOUT("***ERROR*** gopro init error\n");
+		return false;
+	}
+
 	if (0 != pthread_create(&_thread, NULL, GoproPlanQueue::_run_queue, (void*)this)) {
 		printf("error when create pthread,%d\n", errno);
 		return false;
 	}
 	
+	pthread_mutex_init(&_lock,NULL);
 	return true;
 }
 	
@@ -34,19 +44,20 @@ void GoproPlanQueue::stop() {
 	_running = false;
 	
 	pthread_join(_thread,NULL);
+	pthread_mutex_destroy(&_lock);
 }
 	
-int GoproPlanQueue::addPlan(PlanFunc func,const char* _arg) {
+int GoproPlanQueue::addPlan(const char* name) {
 	_plan* _p = new _plan;
 	memset(_p,0,sizeof(_plan));
-	
-	_p->_func = func;
-	
-	if(_arg)
-		strcpy_s(_p->arg,_arg);
-	
+
+	if(name)
+		strcpy_s(_p->name,name);
+
+	pthread_mutex_lock(&_lock);
 	_queue.push_back(_p);
-	
+	pthread_mutex_unlock(&_lock);
+
 	return _queue.getSize();
 }
 
@@ -61,8 +72,30 @@ void* GoproPlanQueue::_run_queue(void*  user) {
 		if(!pointer->_queue.empty()) {
 			list<_plan*>::node* p = pointer->_queue.begin();
 			_plan* plan = p->element;
+			pthread_mutex_lock(&pointer->_lock);
 			pointer->_queue.erase(p);
-			plan->_func(plan->arg);
+			pthread_mutex_unlock(&pointer->_lock);
+			const char* cp = plan->name;
+
+			if (strcmp(cp, "gopro_power_on") == 0) {
+
+				pointer->_gopro4->gopro_wol(GOPRO4_IP, GOPRO4_WOL);
+
+			}
+			else if (pointer->_gopro4->test_is_work())
+			{
+				if (strcmp(cp, "start") == 0) {
+					pointer->_gopro4->start();
+					LOGOUT("***INFO*** gopro start\n");
+				}
+				else if (strcmp(cp, "stop") == 0) {
+					LOGOUT("***INFO*** gopro stop\n");
+					pointer->_gopro4->stop();
+				}
+				else{
+					pointer->_gopro4->runCommand(cp);
+				}
+			}
 			delete plan;
 		}
 #ifdef SLSERVER_WIN32

@@ -45,7 +45,6 @@ private:
 	pthread_mutex_t _timer_int_mutex;
 	pthread_mutex_t _clients_mutex;
 	pthread_mutex_t _clients_write_mutex;
-	gopro4* _gopro4;
 	GoproPlanQueue* _planqueue;
 #ifdef SLSERVER_WIN32
 	static int socket_init;

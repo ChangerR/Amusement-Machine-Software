@@ -320,3 +320,34 @@ void ServerConfig::debug()
 	}
 	LOGOUT("***DEBUG*** Config File End\n");
 }
+
+bool ServerConfig::getMacAddress(const char* p,unsigned char* data)
+{
+	_CONFIG* ret;
+	char tmp[8] = "0x";
+	int index = 0;
+	const char* sMac = NULL;
+	if ((ret = find(p)) == NULL)
+		return false;
+
+	sMac = ret->value;
+	if (strlen(sMac) != 17)
+		return false;
+
+	if ((sMac[2] == ':' && sMac[5] == ':'&& sMac[8] == ':'&& sMac[11] == ':'&& sMac[14] == ':' )||
+		(sMac[2] == '-' && sMac[5] == '-'&& sMac[8] == '-'&& sMac[11] == '-'&& sMac[14] == '-'))
+	{
+		for (int i = 0; i < 6; i++)
+		{
+
+			tmp[2] = sMac[index];
+			tmp[3] = sMac[index + 1];
+			tmp[4] = 0;
+			data[i] = parse_int_hex(tmp) & 0xff;
+		}
+
+		return true;
+	}
+	
+	return false;
+}
