@@ -54,6 +54,9 @@
     <ClInclude Include="..\..\HttpUrlConnection.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\gopro_plan_queue.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\serial-win32.cpp">
@@ -90,6 +93,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\..\HttpUrlConnection.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\gopro_plan_queue.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

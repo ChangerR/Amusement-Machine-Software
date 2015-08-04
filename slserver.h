@@ -10,6 +10,7 @@
 #include "slclient.h"
 #include "ServerConfig.h"
 #include "gopro4.h"
+#include "gopro_plan_queue.h"
 
 class SlServer {
 public:
@@ -45,6 +46,7 @@ private:
 	pthread_mutex_t _clients_mutex;
 	pthread_mutex_t _clients_write_mutex;
 	gopro4* _gopro4;
+	GoproPlanQueue* _planqueue;
 #ifdef SLSERVER_WIN32
 	static int socket_init;
 	static bool winsock_init();

@@ -1,6 +1,8 @@
 #include "slserver.h"
 #include <time.h>
 #include "slconfig.h"
+#include "gopro_plan_queue.h"
+
 #ifdef SLSERVER_WIN32 
 #include <iphlpapi.h>
 #include <windows.h>

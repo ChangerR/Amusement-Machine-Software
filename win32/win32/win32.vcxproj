@@ -42,7 +42,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <LibraryPath>G:\package\rov\server\libcurl\lib;G:\package\rov\server\pthread\lib\x86;$(LibraryPath)</LibraryPath>
+    <LibraryPath>G:\package\rov\slserver\libcurl\lib;G:\package\rov\slserver\pthread\lib\x86;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -55,7 +55,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>G:\package\rov\server\libcurl\include;G:\package\rov\server\pthread\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>G:\package\rov\slserver\libcurl\include;G:\package\rov\slserver\pthread\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -84,6 +84,7 @@
     <ClInclude Include="..\..\arduino_cmd.h" />
     <ClInclude Include="..\..\getopt.h" />
     <ClInclude Include="..\..\gopro4.h" />
+    <ClInclude Include="..\..\gopro_plan_queue.h" />
     <ClInclude Include="..\..\hardware.h" />
     <ClInclude Include="..\..\HttpStream.h" />
     <ClInclude Include="..\..\HttpUrlConnection.h" />
@@ -99,6 +100,7 @@
     <ClCompile Include="..\..\arduino_cmd.cpp" />
     <ClCompile Include="..\..\getopt.c" />
     <ClCompile Include="..\..\gopro4.cpp" />
+    <ClCompile Include="..\..\gopro_plan_queue.cpp" />
     <ClCompile Include="..\..\hardware.cpp" />
     <ClCompile Include="..\..\HttpStream.cpp" />
     <ClCompile Include="..\..\HttpUrlConnection.cpp" />
