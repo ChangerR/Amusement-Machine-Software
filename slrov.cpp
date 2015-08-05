@@ -27,6 +27,9 @@ int delta_yaw[] = {10,20,30,40,60};
 #define _ABS(a) (((a) >= 0)?(a):-(a))
 #define _NEG(a) (((a) >= 0)?1:-1)
 
+const float AtmosPressure = 1015.f;
+const float WaterDensity = 1.019716f;
+	
 slrov::slrov(SlServer* pointer) {
 	rov = NULL;
 	server = pointer;
@@ -68,6 +71,29 @@ int recv_ms5803(int args, char(*argv)[MAX_CMD_ARGUMENT_LEN], void* user) {
 	return 0;
 }
 
+void slrov::setMpuEular(float _x,float _y,float _z) {
+	char tmp[128];
+	mpu_roll = _x;
+	mpu_pitch = _y;
+	mpu_yaw = _z;
+	mpu_campass = _z;
+
+	if (mpu_campass < 0)mpu_campass += 360.f;
+
+	sprintf_s(tmp,"hdgd=%.2f,roll=%.2f,pitch=%.2f,yaw=%.2f",mpu_campass,mpu_roll,mpu_pitch,mpu_yaw);
+	server->broadcast(7,tmp);
+}
+
+void slrov::setMs5803_data(float temp,float press) {
+	char tmp[128];
+	ms5803_temp = temp;
+	ms5803_press = press;
+	depth = (ms5803_press - AtmosPressure) * WaterDensity / 100;
+	
+	sprintf_s(tmp,"temp=%.2f,depth=%.2f",temp,depth);
+	server->broadcast(7,tmp);
+}
+	
 bool slrov::start(const char* s) {
 	running = true;
 	rov = new hardware();

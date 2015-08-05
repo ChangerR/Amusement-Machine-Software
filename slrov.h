@@ -39,16 +39,9 @@ public:
 		return server;
 	}
 	
-	void setMpuEular(float _x,float _y,float _z) {
-		mpu_roll = _x;
-		mpu_pitch = _y;
-		mpu_yaw = _z;
-	}
+	void setMpuEular(float _x,float _y,float _z);
 	
-	void setMs5803_data(float temp,float press) {
-			ms5803_temp = temp;
-			ms5803_press = press;
-	}
+	void setMs5803_data(float temp,float press);
 private:
 	hardware* rov;
 	SlServer* server;
@@ -61,10 +54,12 @@ private:
 	int port,starboard,vertical_left,vertical_right;
 	float mpu_roll,mpu_pitch,mpu_yaw;
 	float ms5803_temp,ms5803_press;
+	float depth,mpu_campass;
 
 	int _midpoint[4];
 	int _power_delta[24];
 	int _yaws_stable[6];
+	
 };
 
 #endif

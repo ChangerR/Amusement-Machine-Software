@@ -309,6 +309,7 @@ void gopro4::stop() {
 }
 
 int gopro4::addClient(int uid,const char* ip) {
+
 	Client c(uid,ip);
 	pthread_mutex_lock(&_client_mutex);
 	_clients.push_back(c);
@@ -370,8 +371,8 @@ bool gopro4::gopro_wol(const char* ip, unsigned short port) {
 	}
 
 	//设置为广播发送
-	bool bOptVal = true;
-	int iOptLen = sizeof(bool);
+	int bOptVal = 1;
+	int iOptLen = sizeof(int);
 	if (setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (char*)&bOptVal, iOptLen) == SOCKET_ERROR)
 	{
 		fprintf(stderr, "setsockopt error: %d\n", errno);

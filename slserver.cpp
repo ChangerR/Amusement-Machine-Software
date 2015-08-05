@@ -185,7 +185,7 @@ void* SlServer::watcher(void* data) {
 		pthread_mutex_lock(&pointer->_clients_mutex);
 		for(list<SlClient*>::node * p = pointer->clients.begin(); p != pointer->clients.end();p = p->next) {
 			p->element->time += 10;
-			LOGOUT("***INFO*** UID:%d client add time %d\n", p->element->uid, p->element->time);
+			//LOGOUT("***INFO*** UID:%d client add time %d\n", p->element->uid, p->element->time);
 			if(p->element->time >= 60) {
 				p->element->client_state = CLIENT_DEAD;
 				LOGOUT("***INFO*** UID:%d client deaded\n", p->element->uid);
@@ -282,7 +282,7 @@ void* SlServer::recv_data(void* data) {
 								pthread_mutex_lock(&pointer->_clients_write_mutex);
 								p->element->write("1:::\r\n",6);
 								pthread_mutex_unlock(&pointer->_clients_write_mutex);
-								LOGOUT("***INFO*** UID:%d Client timer clear\n", p->element->uid);
+								//LOGOUT("***INFO*** UID:%d Client timer clear\n", p->element->uid);
 								break;
 							case '2':
 								LOGOUT("***INFO*** recv msg %s\n", msg);
@@ -336,17 +336,20 @@ void SlServer::broadcast(int channel,const char* p) {
 	len = strlen(b_buf);
 	
 	pthread_mutex_lock(&_clients_write_mutex);
-	for(list<SlClient*>::node * p = clients.begin(); p != clients.end();p = p->next) {
-		p->element->write(b_buf,len);
+//	LOGOUT("***DEBBUG*** BROADCAST\n");
+	for(list<SlClient*>::node * pn = clients.begin(); pn != clients.end();pn = pn->next) {
+		pn->element->write(b_buf,len);
+		LOGOUT("***INFO*** write:%d cmd:%s", pn->element->uid, b_buf);
 	}
+
 	pthread_mutex_unlock(&_clients_write_mutex);
 }
 
-void SlServer::send(int id,int channel,const char* p) {
+void SlServer::send(int id,int channel,const char* ps) {
 	static char b_buf[1024];
 	int len;
 	
-	sprintf_s(b_buf, "%d:::%s\r\n", channel, p);
+	sprintf_s(b_buf, "%d:::%s\r\n", channel, ps);
 	len = strlen(b_buf);
 	
 	for(list<SlClient*>::node * p = clients.begin(); p != clients.end();p = p->next) {

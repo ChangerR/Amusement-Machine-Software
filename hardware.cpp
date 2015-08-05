@@ -67,12 +67,9 @@ void* __cdecl hardware::recv_thread(void* data) {
 	
 	while(t->running) {
 		
-		if(t->serial->readline(buf) != -1 /*&& arduino_cmd::parse_command(buf)*/) {
-			if(strncmp(buf,"ms5803",6)) {
-				LOGOUT("***INFO*** SERIAL:%s\n",buf);
-			}
-			//LOGOUT("***INFO*** SERIAL:%s\n",buf);
-			//arduino_cmd::execute();
+		if(t->serial->readline(buf) != -1 && arduino_cmd::parse_command(buf)) {
+			LOGOUT("***INFO*** SERIAL:%s\n",buf);
+			arduino_cmd::execute();
 		}
 #ifdef SLSERVER_WIN32
 		Sleep(1);
