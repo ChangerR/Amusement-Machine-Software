@@ -339,7 +339,7 @@ void SlServer::broadcast(int channel,const char* p) {
 //	LOGOUT("***DEBBUG*** BROADCAST\n");
 	for(list<SlClient*>::node * pn = clients.begin(); pn != clients.end();pn = pn->next) {
 		pn->element->write(b_buf,len);
-		LOGOUT("***INFO*** write:%d cmd:%s", pn->element->uid, b_buf);
+		//LOGOUT("***INFO*** write:%d cmd:%s", pn->element->uid, b_buf);
 	}
 
 	pthread_mutex_unlock(&_clients_write_mutex);

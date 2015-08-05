@@ -1,5 +1,10 @@
  #include "gopro_plan_queue.h"
-
+#include <string.h>
+#include <stdlib.h>
+#ifdef SLSERVER_LINUX
+#include <unistd.h>
+#include <errno.h>
+#endif
 #ifdef SLSERVER_WIN32
 #include <windows.h>
 #endif
