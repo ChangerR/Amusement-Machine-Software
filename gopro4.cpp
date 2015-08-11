@@ -261,7 +261,17 @@ void* gopro4::transfer(void* user) {
 }
 
 bool gopro4::start() {
-
+	pthread_attr_t attr; 
+	int priority;    
+	struct sched_param param;
+	
+	pthread_attr_init(&attr); 
+	priority=sched_get_priority_max(SCHED_RR);
+	
+	pthread_attr_getschedparam(&attr,&param);
+	param.sched_priority=priority;
+	pthread_attr_setschedparam(&attr,&param);
+	
 	if (_is_start)
 		return true;
 
@@ -277,7 +287,7 @@ bool gopro4::start() {
 		return false;
 	}
 	
-	if (0 != pthread_create(&_trans_thread, NULL, gopro4::transfer, (void*)this)) {
+	if (0 != pthread_create(&_trans_thread, &attr, gopro4::transfer, (void*)this)) {
 		printf("***ERROR*** gopro4 when create pthread transfer thread,%d\n", errno);
 		return false;
 	}

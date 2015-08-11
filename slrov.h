@@ -59,7 +59,7 @@ private:
 	int _midpoint[4];
 	int _power_delta[24];
 	int _yaws_stable[6];
-	
+	float _scale_fact[8];
 };
 
 #endif

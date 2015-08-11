@@ -21,7 +21,7 @@ inline void copy_socket_buffer(char* buf,int from,int to,int len) {
 	}
 }
 
-int SlClient::getline(char* buf,int max_len) {
+int SlClient::getline_no_remove(char* buf,int max_len) {
 	int nRead = 0;
 	for(;nRead < _wpos;nRead++) {
 		if(_buffer[nRead] == '\n')
@@ -31,6 +31,31 @@ int SlClient::getline(char* buf,int max_len) {
 	if(_buffer[nRead] == '\n') {
 		if(nRead > max_len)
 			return -1;
+		memcpy(buf,_buffer,nRead);
+		if (buf[nRead - 1] == '\r') {
+			buf[nRead - 1] = 0;
+		}
+		else {
+			buf[nRead] = 0;
+		}
+		return nRead;
+	}
+	
+	return -1;
+}
+
+int SlClient::getline(char* buf,int max_len) {
+	int nRead = 0;
+	for(;nRead < _wpos;nRead++) {
+		if(_buffer[nRead] == '\n')
+			break;
+	}
+	
+	if(_buffer[nRead] == '\n') {
+		if(nRead > max_len) {
+			LOGOUT("***ERROR*** string big than max len\n");
+			return -1;
+		}
 		memcpy(buf,_buffer,nRead);
 		if (buf[nRead - 1] == '\r') {
 			buf[nRead - 1] = 0;
@@ -63,13 +88,7 @@ bool SlClient::handsank() {
 	char* p = hand_buf;
 	u32 magic = 0;
 	
-	if(read() == -1) {
-		LOGOUT("when handsank socket read error\n");
-		client_state = CLIENT_DEAD;
-		return false;
-	}
-	
-	if(-1 == getline(hand_buf,256)) {
+	if(-1 == getline_no_remove(hand_buf,256)) {
 		LOGOUT("when handsank occur error format\n");
 		client_state = CLIENT_DEAD;
 		return false;
@@ -88,9 +107,22 @@ bool SlClient::handsank() {
 		client_state = CLIENT_DEAD;
 		return false;
 	}
-
+	getline(hand_buf,256);
 	client_state = CLIENT_WORKING;
 	return true;
+}
+
+bool SlClient::http_connect() {
+	char hand_buf[256];
+	char* p = hand_buf;
+	
+	if(-1 == getline_no_remove(hand_buf,256)) {
+		LOGOUT("when handsank occur error format\n");
+		client_state = CLIENT_DEAD;
+		return false;
+	}
+	getline(hand_buf,256);
+	return false;
 }
 
 int SlClient::read() {

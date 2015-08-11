@@ -174,6 +174,30 @@ bool slrov::start(const char* s) {
 		if (!server->_config->getInt("POWER5_VERTICAL_RIGHT", &_power_delta[POWER5_INDEX + VERTICAL_RIGHT_INDEX]))
 			_power_delta[POWER5_INDEX + VERTICAL_RIGHT_INDEX] = delta_power[4];
 		
+		if (!server->_config->getFloat("PORT_SCALE_FACT_FORWARD", &_scale_fact[0]))
+			_scale_fact[0] = 1.f;
+		
+		if (!server->_config->getFloat("PORT_SCALE_FACT_BACK", &_scale_fact[1]))
+			_scale_fact[1] = -1.f;
+		
+		if (!server->_config->getFloat("STARBORD_SCALE_FACT_FORWARD", &_scale_fact[2]))
+			_scale_fact[2] = 1.f;
+		
+		if (!server->_config->getFloat("STARBORD_SCALE_FACT_BACK", &_scale_fact[3]))
+			_scale_fact[3] = -1.f;
+		
+		if (!server->_config->getFloat("VERTICAL_LEFT_SCALE_FACT_FORWARD", &_scale_fact[4]))
+			_scale_fact[4] = 1.f;
+		
+		if (!server->_config->getFloat("VERTICAL_LEFT_SCALE_FACT_BACK", &_scale_fact[5]))
+			_scale_fact[5] = -1.f;
+		
+		if (!server->_config->getFloat("VERTICAL_RIGHT_SCALE_FACT_FORWARD", &_scale_fact[6]))
+			_scale_fact[6] = 1.f;
+		
+		if (!server->_config->getFloat("VERTICAL_RIGHT_SCALE_FACT_BACK", &_scale_fact[7]))
+			_scale_fact[7] = -1.f;
+		
 		_yaws_stable[0] = 0;
 
 		if (!server->_config->getInt("POWER1_YAW", &_yaws_stable[1]))

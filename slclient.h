@@ -24,10 +24,14 @@ public:
 	}
 	virtual ~SlClient(){}
 	
+	int getline_no_remove(char* buf,int max_len)
 	int getline(char*,int);
 	int write(const char*,int);
 	void close();
+	
 	bool handsank();
+	bool http_connect();
+	
 	int read();
 	
 public:
