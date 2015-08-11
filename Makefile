@@ -2,7 +2,7 @@ CFLAG = -c -O0 -g
 LKFLAG = -lcurl -lpthread 
 
 OBJS = arduino_cmd.o serial-linux.o hardware.o slrov.o HttpStream.o HttpUrlConnection.o \
-	  ServerConfig.o slclient.o slserver.o gopro4.o main.o 
+	  ServerConfig.o slclient.o slserver.o gopro4.o gopro_plan_queue.o main.o 
 
 slserver: $(OBJS)
 	g++ -o $@ $(OBJS) $(LKFLAG)
