@@ -16,3 +16,4 @@
 Debug/*
 *.sdf
 server_test/*
+win32/win32/Debug/*

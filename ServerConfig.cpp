@@ -76,7 +76,7 @@ bool ServerConfig::parseData() {
 			}
 			break;
 		case CONFIG_PARSE_NAME:
-			if(offset >= 32) {
+			if(offset >= 64) {
 				parse_state = CONFIG_PARSE_ERROR;
 				continue;
 			}

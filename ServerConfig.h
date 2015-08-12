@@ -127,7 +127,7 @@ private:
 			strcpy_s(name,c.name);
 			strcpy_s(value,c.value);
 		}
-		char name[32];
+		char name[64];
 		char value[64];
 	};
 

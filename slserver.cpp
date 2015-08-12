@@ -312,7 +312,7 @@ void* SlServer::recv_data(void* data) {
 				}else{
 					if(p->element->read() == -1) {
 						LOGOUT("when handsank socket read error\n");
-						client_state = CLIENT_DEAD;
+						p->element->client_state = CLIENT_DEAD;
 					}else if(p->element->handsank()) {	
 						pthread_mutex_lock(&pointer->_clients_write_mutex);
 						p->element->write("SLOK:::\r\n",9);
