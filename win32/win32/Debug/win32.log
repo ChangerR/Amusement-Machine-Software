@@ -1,19 +1,28 @@
-﻿生成启动时间为 2015/8/12 10:02:22。
+﻿生成启动时间为 2015/8/12 22:44:56。
      1>项目“E:\package\rov\slserver\win32\win32\win32.vcxproj”在节点 2 上(Build 个目标)。
      1>C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V120\Microsoft.CppBuild.targets(381,5): warning MSB8028: The intermediate directory (Debug\) contains files shared from another project (win32.vcxproj).  This can lead to incorrect clean and rebuild behavior.
      1>ClCompile:
-         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /IE:\package\rov\slserver\libcurl\include /IE:\package\rov\slserver\pthread\include /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _DEBUG /D _WINDOWS /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt ..\..\ServerConfig.cpp ..\..\gopro4.cpp ..\..\main.cpp ..\..\slrov.cpp ..\..\slserver.cpp
-         ServerConfig.cpp
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /IE:\package\rov\slserver\libcurl\include /IE:\package\rov\slserver\pthread\include /ZI /nologo /W3 /WX- /sdl- /Od /Oy- /D WIN32 /D _DEBUG /D _WINDOWS /D _CRT_SECURE_NO_WARNINGS /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt ..\..\HttpStream.cpp ..\..\HttpUrlConnection.cpp ..\..\ServerConfig.cpp ..\..\arduino_cmd.cpp ..\..\gopro4.cpp ..\..\gopro_plan_queue.cpp ..\..\hardware.cpp ..\..\main.cpp "..\..\serial-win32.cpp" ..\..\slclient.cpp ..\..\slrov.cpp ..\..\slserver.cpp
+         slclient.cpp
+         main.cpp
          正在生成代码...
          正在编译...
          slserver.cpp
      1>e:\package\rov\slserver\slserver.cpp(47): warning C4244: “=”: 从“time_t”转换到“long”，可能丢失数据
-     1>e:\package\rov\slserver\slserver.cpp(229): warning C4018: “>”: 有符号/无符号不匹配
+     1>e:\package\rov\slserver\slserver.cpp(234): warning C4018: “>”: 有符号/无符号不匹配
          slrov.cpp
-         main.cpp
+         serial-win32.cpp
+         hardware.cpp
+         gopro_plan_queue.cpp
          gopro4.cpp
      1>e:\package\rov\slserver\gopro4.cpp : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+         arduino_cmd.cpp
+         ServerConfig.cpp
+         HttpUrlConnection.cpp
+         HttpStream.cpp
          正在生成代码...
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /IE:\package\rov\slserver\libcurl\include /IE:\package\rov\slserver\pthread\include /ZI /nologo /W3 /WX- /sdl- /Od /Oy- /D WIN32 /D _DEBUG /D _WINDOWS /D _CRT_SECURE_NO_WARNINGS /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TC /analyze- /errorReport:prompt ..\..\getopt.c
+         getopt.c
        Link:
          C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"E:\package\rov\slserver\win32\Debug\slserver.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"E:\package\rov\slserver\win32\Debug\slserver.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"E:\package\rov\slserver\win32\Debug\slserver.lib" /MACHINE:X86 Debug\arduino_cmd.obj
          Debug\getopt.obj
@@ -33,4 +42,4 @@
 
 生成成功。
 
-已用时间 00:00:01.88
+已用时间 00:00:04.73

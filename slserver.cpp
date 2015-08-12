@@ -124,6 +124,9 @@ bool SlServer::init(const char* p) {
 
 	gopro4::_init_mac = _config->getMacAddress("GOPRO_MAC", gopro4::_smac);
 
+	if(_config->getString("WWW-FOLDER",SlClient::www_folder) == false)
+		SlClient::www_folder[0];
+	
 	return true;
 }
 
@@ -184,11 +187,13 @@ void* SlServer::watcher(void* data) {
 		
 		pthread_mutex_lock(&pointer->_clients_mutex);
 		for(list<SlClient*>::node * p = pointer->clients.begin(); p != pointer->clients.end();p = p->next) {
-			p->element->time += 10;
-			//LOGOUT("***INFO*** UID:%d client add time %d\n", p->element->uid, p->element->time);
-			if(p->element->time >= 60) {
-				p->element->client_state = CLIENT_DEAD;
-				LOGOUT("***INFO*** UID:%d client deaded\n", p->element->uid);
+			if(p->element->client_state != CLIENT_HTTP) {
+				p->element->time += 10;
+				//LOGOUT("***INFO*** UID:%d client add time %d\n", p->element->uid, p->element->time);
+				if(p->element->time >= 60) {
+					p->element->client_state = CLIENT_DEAD;
+					LOGOUT("***INFO*** UID:%d client deaded\n", p->element->uid);
+				}
 			}
 		}
 		pthread_mutex_unlock(&pointer->_clients_mutex);
@@ -318,7 +323,9 @@ void* SlServer::recv_data(void* data) {
 						p->element->write("SLOK:::\r\n",9);
 						pthread_mutex_unlock(&pointer->_clients_write_mutex);
 					}else if(p->element->http_connect()) {
-						
+						p->element->do_http();
+					}else {
+						p->element->client_state = CLIENT_DEAD;
 					}
 				}
 			}
@@ -344,7 +351,8 @@ void SlServer::broadcast(int channel,const char* p) {
 	pthread_mutex_lock(&_clients_write_mutex);
 //	LOGOUT("***DEBBUG*** BROADCAST\n");
 	for(list<SlClient*>::node * pn = clients.begin(); pn != clients.end();pn = pn->next) {
-		pn->element->write(b_buf,len);
+		if(pn->element->client_state == CLIENT_CREATING)
+			pn->element->write(b_buf,len);
 		//LOGOUT("***INFO*** write:%d cmd:%s", pn->element->uid, b_buf);
 	}
 
@@ -359,7 +367,7 @@ void SlServer::send(int id,int channel,const char* ps) {
 	len = strlen(b_buf);
 	
 	for(list<SlClient*>::node * p = clients.begin(); p != clients.end();p = p->next) {
-		if(p->element->uid == id) {
+		if(p->element->uid == id&&p->element->client_state == CLIENT_CREATING) {
 			pthread_mutex_lock(&_clients_write_mutex);
 			if (p->element->write(b_buf, len) == -1) {
 				LOGOUT("***ERR***: Send UID:%d error", id);

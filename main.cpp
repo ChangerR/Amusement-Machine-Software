@@ -1,7 +1,7 @@
 #include "serial.h"
 #include <stdio.h>
 #include <stdlib.h>
-
+#include "global.h"
 #include "slserver.h"
 #include "hardware.h"
 #include "getopt.h"
@@ -15,7 +15,11 @@ int getopt(int argc, char * const argv[], const char *optstring);
 
 extern char *optarg;
 extern int optind, opterr, optopt;
+
 #endif
+
+Global global;
+
 /*
 int main(int args,char** argv) {
 
@@ -52,6 +56,14 @@ int main(int args,char** argv) {
 	char filename[256] = {0};
 	ServerConfig* pConfig = NULL;
 	SlServer* pserver = NULL;
+	
+	
+	pthread_mutex_init(&global.frame_lock,NULL);
+	global.is_stream_running = false;
+	global.frame = NULL;
+	global.frame_size = 0;
+	global.frame_alloc_size = 0;
+	
 	while((ch = getopt(args,argv,"p:s:f:")) != -1) {
 		
 		switch(ch) {
@@ -97,7 +109,8 @@ int main(int args,char** argv) {
 
 	
 	pserver = new SlServer(port,pConfig);
-
+	global.pConfig = pConfig;
+	
 	if (pserver->init(serial_port) == false) {
 		goto end;
 	}
@@ -117,7 +130,11 @@ end:
 		pConfig->sync();
 		delete pConfig;
 	}
-		
+	
+	pthread_mutex_destroy(&global.frame_lock);
+	if(global.frame)
+		delete[] global.frame;
+	
 	return 0;
 }
 

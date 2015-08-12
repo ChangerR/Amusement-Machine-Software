@@ -1,6 +1,9 @@
 #include "slclient.h"
 #include "slconfig.h"
 #include <string.h>
+#include <errno.h>
+#include <stdio.h>
+#include "global.h"
 #ifdef SLSERVER_WIN32
 #include <winsock2.h>
 #endif
@@ -14,7 +17,33 @@
 #include <errno.h>
 #include <arpa/inet.h>
 #endif
+
+static const struct {
+    const char *dot_extension;
+    const char *mimetype;
+} mimetypes[] = {
+    { ".html", "text/html" },
+    { ".htm",  "text/html" },
+    { ".css",  "text/css" },
+    { ".js",   "text/javascript" },
+    { ".txt",  "text/plain" },
+    { ".jpg",  "image/jpeg" },
+    { ".jpeg", "image/jpeg" },
+    { ".png",  "image/png"},
+    { ".gif",  "image/gif" },
+    { ".ico",  "image/x-icon" },
+    { ".swf",  "application/x-shockwave-flash" },
+    { ".cab",  "application/x-shockwave-flash" },
+    { ".jar",  "application/java-archive" },
+    { ".json", "application/json" },
+	{ ".config", "text/plain" },
+	{ ".ttf", "application/octet-stream" },
+	{ ".svg", "image/svg+xml" },
+	{ ".woff","application/x-font-woff"}
+};
+
 u32 SlClient::id_counter = 1000;
+
 inline void copy_socket_buffer(char* buf,int from,int to,int len) {
 	for(int i = 0; i < len;i++) {
 		buf[to + i] = buf[from + i];
@@ -34,6 +63,7 @@ int SlClient::getline_no_remove(char* buf,int max_len) {
 		memcpy(buf,_buffer,nRead);
 		if (buf[nRead - 1] == '\r') {
 			buf[nRead - 1] = 0;
+			nRead -= 1;
 		}
 		else {
 			buf[nRead] = 0;
@@ -45,7 +75,7 @@ int SlClient::getline_no_remove(char* buf,int max_len) {
 }
 
 int SlClient::getline(char* buf,int max_len) {
-	int nRead = 0;
+	int nRead = 0,len;
 	for(;nRead < _wpos;nRead++) {
 		if(_buffer[nRead] == '\n')
 			break;
@@ -59,14 +89,16 @@ int SlClient::getline(char* buf,int max_len) {
 		memcpy(buf,_buffer,nRead);
 		if (buf[nRead - 1] == '\r') {
 			buf[nRead - 1] = 0;
+			len = nRead - 1;
 		}
 		else {
 			buf[nRead] = 0;
+			len = nRead;
 		}
 		nRead++;
 		_wpos -= nRead;
 		copy_socket_buffer(_buffer,nRead,0,_wpos);
-		return nRead - 1;
+		return len;
 	}
 	
 	return -1;
@@ -97,13 +129,13 @@ bool SlClient::handsank() {
 	magic = *(u32*)((void*)hand_buf);
 	
 	if(magic != HANDASNK_MAGIC) {
-		LOGOUT("handsank error magic NUMBER:0x%X\n",magic);
+//		LOGOUT("handsank error magic NUMBER:0x%X\n",magic);
 		client_state = CLIENT_DEAD;
 		return false;
 	}
 	
 	if(p[4] != ':'||p[5] != ':'||p[6] != ':') {
-		LOGOUT("handsank error format");
+//		LOGOUT("handsank error format");
 		client_state = CLIENT_DEAD;
 		return false;
 	}
@@ -115,14 +147,298 @@ bool SlClient::handsank() {
 bool SlClient::http_connect() {
 	char hand_buf[256];
 	char* p = hand_buf;
-	
+	int offset = 0;
+	bool ret = false;
 	if(-1 == getline_no_remove(hand_buf,256)) {
 		LOGOUT("when handsank occur error format\n");
 		client_state = CLIENT_DEAD;
 		return false;
 	}
+	
+	do {
+		while(*p != ' '&&*p) {
+			if(offset >= METHOD_NAME_LEN - 1) {
+				LOGOUT("======>ERROR Http Method\n");
+				break;
+			}
+			_method[offset++] = *p++;
+		}
+		_method[offset] = 0;
+		offset = 0;
+		
+		if(*p != ' ')
+			break;
+		p++;
+
+		while(*p != ' '&&*p) {
+			if(offset >= REQUEST_PATH - 1) {
+				LOGOUT("======>ERROR Http Path\n");
+				break;
+			}
+			_path[offset++] = *p++;
+		}
+		_path[offset] = 0;
+		offset = 0;
+		
+		if(*p != ' ')
+			break;
+		p++;
+
+		while(*p) {
+			if(offset >= REQUEST_MAGIC - 1) {
+				LOGOUT("======>ERROR Http Version\n");
+				break;
+			}
+			_magic[offset++] = *p++;
+		}
+		_magic[offset] = 0;
+		
+		if(!*p) {
+			client_state = CLIENT_HTTP;
+			ret = true;
+		}
+	}while(0);
+	
 	getline(hand_buf,256);
-	return false;
+	return ret;
+}
+
+bool SlClient::do_http() {
+	if (0 != pthread_create(&_thread, NULL, SlClient::http_client_thread, (void*)this)) {
+		printf("=======>error when create http pthread,%d\n", errno);
+		return false;
+	}
+	
+	return true;
+}
+
+void* SlClient::http_client_thread(void* arg) {
+	SlClient* pointer = (SlClient*)arg;
+	char buf[512] = {0};
+	int ret = 0;
+	do {
+		if(0 != strcmp("GET",pointer->_method))
+			break;
+		
+		if(0 != strcmp("HTTP/1.1",pointer->_magic))
+			break;
+		
+		while((ret = pointer->getline(buf,512)) > 0) {
+			LOGOUT("====>%s\n",buf);
+		}
+		
+		if(ret != 0) {
+			LOGOUT("====>Read client error\n");
+			break;
+		}
+		
+		if(strcmp(pointer->_path,"/") == 0) {
+			pointer->send_file("index.html");
+		}else if(strcmp(pointer->_path,"/stream") == 0) {
+			pointer->send_stream();
+		}else {
+			pointer->send_file(pointer->_path);
+		}
+		
+	}while(0);
+	
+	pointer->client_state = CLIENT_DEAD;
+	return NULL;
+}
+	
+void SlClient::send_error(int which,const char* message) {
+	char buffer[1024] = {0};
+
+    if(which == 401) {
+        sprintf_s(buffer, "HTTP/1.1 401 Unauthorized\r\n" \
+                "Content-type: text/plain\r\n" \
+                STD_HEADER \
+                "WWW-Authenticate: Basic realm=\"SlServer\"\r\n" \
+                "\r\n" \
+                "401: Not Authenticated!\r\n" \
+                "%s", message);
+    } else if(which == 404) {
+        sprintf_s(buffer, "HTTP/1.1 404 Not Found\r\n" \
+                "Content-type: text/plain\r\n" \
+                STD_HEADER \
+                "\r\n" \
+                "404: Not Found!\r\n" \
+                "%s", message);
+    } else if(which == 500) {
+        sprintf_s(buffer, "HTTP/1.1 500 Internal Server Error\r\n" \
+                "Content-type: text/plain\r\n" \
+                STD_HEADER \
+                "\r\n" \
+                "500: Internal Server Error!\r\n" \
+                "%s", message);
+    } else if(which == 400) {
+        sprintf_s(buffer, "HTTP/1.1 400 Bad Request\r\n" \
+                "Content-type: text/plain\r\n" \
+                STD_HEADER \
+                "\r\n" \
+                "400: Not Found!\r\n" \
+                "%s", message);
+    } else {
+        sprintf_s(buffer, "HTTP/1.1 501 Not Implemented\r\n" \
+                "Content-type: text/plain\r\n" \
+                STD_HEADER \
+                "\r\n" \
+                "501: Not Implemented!\r\n" \
+                "%s", message);
+    }
+	
+	if(write(buffer, strlen(buffer)) < 0) {
+        LOGOUT("***ERROR*** write failed, done anyway\n");
+    }
+}
+
+void SlClient::send_file(const char* parameter) {
+	char buffer[1024] = {0};
+    const char *extension, *mimetype = NULL;
+    int i;
+	FILE* lfd;
+	int file_legth = 0;
+	
+	if(www_folder[0] == 0) {
+		send_error(501, "Not set www_folder");
+		return;
+	}
+	
+    /* in case no parameter was given */
+    if(parameter == NULL || strlen(parameter) == 0)
+        parameter = "index.html";
+
+    /* find file-extension */
+    const char * pch;
+    pch = strchr(parameter, '.');
+    int lastDot = 0;
+    while(pch != NULL) {
+        lastDot = pch - parameter;
+        pch = strchr(pch + 1, '.');
+    }
+
+    if(lastDot == 0) {
+        send_error(400, "No file extension found");
+        return;
+    } else {
+        extension = parameter + lastDot;
+        LOGOUT("%s EXTENSION: %s\n", parameter, extension);
+    }
+
+    /* determine mime-type */
+    for(i = 0; i < LENGTH_OF(mimetypes); i++) {
+        if(strcmp(mimetypes[i].dot_extension, extension) == 0) {
+            mimetype = (char *)mimetypes[i].mimetype;
+            break;
+        }
+    }
+
+    /* in case of unknown mimetype or extension leave */
+    if(mimetype == NULL) {
+        send_error(404, "MIME-TYPE not known");
+        return;
+    }
+
+    /* now filename, mimetype and extension are known */
+    LOGOUT("trying to serve file \"%s\", extension: \"%s\" mime: \"%s\"\n", parameter, extension, mimetype);
+
+    /* build the absolute path to the file */
+    strncat_s(buffer, www_folder, sizeof(buffer) - 1);
+    strncat_s(buffer, parameter, sizeof(buffer) - strlen(buffer) - 1);
+
+    /* try to open that file */
+    if((lfd = fopen(buffer, "rb")) == NULL) {
+        LOGOUT("file %s not accessible\n", buffer);
+        send_error(404, "File not accessible");
+        return;
+    }
+    LOGOUT("opened file: %s\n", buffer);
+	fseek(lfd, 0, SEEK_END);
+	file_legth = ftell(lfd);
+	fseek(lfd, 0, SEEK_SET);
+
+    /* prepare HTTP header */
+    sprintf(buffer, "HTTP/1.1 200 OK\r\n" \
+            "Content-type: %s\r\n" \
+			"Content-length: %d\r\n" \
+            STD_HEADER \
+            "\r\n", mimetype,file_legth);
+    i = strlen(buffer);
+
+    /* first transmit HTTP-header, afterwards transmit content of file */
+	if (write(buffer, i) < 0) {
+		fclose(lfd);
+		return;
+	}
+
+	while (file_legth > 0)
+	{
+		i = file_legth > 1024 ? 1024 : file_legth;
+		fread(buffer, i, 1, lfd);
+
+		if (write(buffer, i) < 0) {
+			fclose(lfd);
+			return;
+		}
+		file_legth -= i;
+	}
+    
+    /* close file, job done */
+    fclose(lfd);
+}
+
+void SlClient::send_stream() {
+	unsigned char *frame = NULL;
+    int frame_size = 0, max_frame_size = 0;
+    char buffer[1024] = {0};
+	
+	LOGOUT("preparing header\n");
+    sprintf(buffer, "HTTP/1.1 200 OK\r\n" \
+            "Access-Control-Allow-Origin: *\r\n" \
+            STD_HEADER \
+            "Content-Type: multipart/x-mixed-replace;boundary=" BOUNDARY "\r\n" \
+            "\r\n" \
+            "--" BOUNDARY "\r\n");
+
+    if(write(buffer, strlen(buffer)) < 0) {
+        return;
+    }
+	
+	while(global.is_stream_running) {
+		
+		if(global.frame_size <= 0 || global.frame == NULL)
+			break;
+		
+		pthread_mutex_lock(&global.frame_lock);
+		
+		if(max_frame_size < global.frame_size) {
+			
+			if(frame)
+				delete[] frame;
+			
+			frame = new unsigned char[global.frame_alloc_size];
+			max_frame_size = global.frame_alloc_size;
+		}
+		
+		memcpy(frame,global.frame,global.frame_size);
+		frame_size = global.frame_size;
+		
+		pthread_mutex_unlock(&global.frame_lock);
+		
+		sprintf(buffer, "Content-Type: image/jpeg\r\n" \
+                "Content-Length: %d\r\n" \
+                "\r\n", frame_size);
+		if(write(buffer, strlen(buffer)) < 0) break;
+		
+		if(write((char*)frame, frame_size) < 0) break;
+
+        sprintf(buffer, "\r\n--" BOUNDARY "\r\n");
+		
+        if(write(buffer, strlen(buffer)) < 0) break;
+	}
+	
+	if(frame)
+		delete[] frame;
 }
 
 int SlClient::read() {
@@ -159,3 +475,5 @@ SlClient::SlClient(SOCKET s)
 	}else
 		strcpy_s(ip, "0.0.0.0");
 }
+
+char SlClient::www_folder[256];
