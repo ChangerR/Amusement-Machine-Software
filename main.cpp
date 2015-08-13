@@ -18,7 +18,7 @@ extern int optind, opterr, optopt;
 
 #endif
 
-Global global;
+SlGlobal slglobal;
 
 /*
 int main(int args,char** argv) {
@@ -56,13 +56,16 @@ int main(int args,char** argv) {
 	char filename[256] = {0};
 	ServerConfig* pConfig = NULL;
 	SlServer* pserver = NULL;
-	
-	
-	pthread_mutex_init(&global.frame_lock,NULL);
-	global.is_stream_running = false;
-	global.frame = NULL;
-	global.frame_size = 0;
-	global.frame_alloc_size = 0;
+#ifdef SLSERVER_LINUX
+	pthread_mutex_init(&slglobal.frame_lock,NULL);
+#else
+	INIT_GLOBAL_FRAME_LOCK;
+#endif
+	slglobal.is_stream_running = false;
+	slglobal.frame = NULL;
+	slglobal.frame_size = 0;
+	slglobal.frame_alloc_size = 0;
+	slglobal.frame_count = 1;
 	
 	while((ch = getopt(args,argv,"p:s:f:")) != -1) {
 		
@@ -109,7 +112,7 @@ int main(int args,char** argv) {
 
 	
 	pserver = new SlServer(port,pConfig);
-	global.pConfig = pConfig;
+	slglobal.pConfig = pConfig;
 	
 	if (pserver->init(serial_port) == false) {
 		goto end;
@@ -130,10 +133,13 @@ end:
 		pConfig->sync();
 		delete pConfig;
 	}
-	
-	pthread_mutex_destroy(&global.frame_lock);
-	if(global.frame)
-		delete[] global.frame;
+#ifdef SLSERVER_LINUX
+	pthread_mutex_destroy(&slglobal.frame_lock);
+#else
+	DESTROY_GLOBAL_FRAME_LOCK;
+#endif
+	if(slglobal.frame)
+		 free(slglobal.frame);
 	
 	return 0;
 }

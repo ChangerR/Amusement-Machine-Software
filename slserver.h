@@ -1,9 +1,6 @@
 #ifndef __SLSERVER_H
 #define __SLSERVER_H
 #include "slconfig.h"
-#ifdef SLSERVER_WIN32
-#include <winsock2.h>
-#endif
 #include "list.h"
 #include "slrov.h"
 #include <pthread.h>

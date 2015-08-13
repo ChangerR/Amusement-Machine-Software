@@ -42,7 +42,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <LibraryPath>E:\package\rov\slserver\libcurl\lib;E:\package\rov\slserver\pthread\lib\x86;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\libcurl\lib;$(SolutionDir)..\pthread\lib\x86;$(SolutionDir)\..\ffmpeg\lib;$(LibraryPath)</LibraryPath>
+    <CustomBuildAfterTargets>AddIntermediateAssemblyToReferenceList</CustomBuildAfterTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -55,12 +56,24 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>false</SDLCheck>
-      <AdditionalIncludeDirectories>E:\package\rov\slserver\libcurl\include;E:\package\rov\slserver\pthread\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\libcurl\include;$(SolutionDir)..\pthread\include;$(SolutionDir)..\ffmpeg\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>avformat.lib;avutil.lib;avdevice.lib;avcodec.lib;swscale.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+      <TreatOutputAsContent>true</TreatOutputAsContent>
+    </CustomBuildStep>
+    <PostBuildEvent>
+      <Command>copy $(SolutionDir)..\ffmpeg\bin\*.dll $(OutDir)
+copy $(SolutionDir)..\libcurl\bin\*.dll $(OutDir)
+copy $(SolutionDir)..\pthread\dll\x86\pthreadVC2.dll $(OutDir)
+copy $(SolutionDir)..\slserver_win32.config $(OutDir)\slserver.config</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -83,6 +96,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\arduino_cmd.h" />
     <ClInclude Include="..\..\getopt.h" />
+    <ClInclude Include="..\..\global.h" />
     <ClInclude Include="..\..\gopro4.h" />
     <ClInclude Include="..\..\gopro_plan_queue.h" />
     <ClInclude Include="..\..\hardware.h" />

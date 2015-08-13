@@ -4,9 +4,6 @@
 #include <pthread.h>
 #include "list.h"
 #include "HttpUrlConnection.h"
-#ifdef SLSERVER_WIN32
-#include <winsock2.h>
-#endif
 #ifdef __linux__
 #include<sys/types.h>  
 #include<sys/socket.h>  
@@ -18,9 +15,11 @@
 #define GOPRO4_IP "10.5.5.9"
 #define GOPRO4_WOL 9
 
+#define GOPRO4_TRANSFER_PORT 1
+#define GOPRO4_TRANSFER_STREAM 2
 class gopro4 {
 public:
-	gopro4();
+	gopro4(int trans_t = GOPRO4_TRANSFER_STREAM);
 	virtual ~gopro4();
 	
 	bool init();
@@ -34,7 +33,8 @@ public:
 	static void* heartbeat(void *);
 	static void* transfer(void*);
 	static bool gopro_wol(const char* ip, unsigned short port);
-
+	static void* transfer_stream(void* data);
+	
 	bool test_is_work();
 
 	static bool _init_mac;
@@ -56,7 +56,7 @@ private:
 	bool _beat_running;
 	bool _is_start;
 	bool _is_working;
-
+	int _trans_type;
 	class Client {
 	public:
 		Client();
@@ -69,7 +69,7 @@ private:
 	pthread_t _trans_thread;
 	char* _recv_buffer;
 	HttpUrlConnection _conn;
-
+	static int ffmpeg_init;
 };
 
 #endif

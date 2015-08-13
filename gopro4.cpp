@@ -1,9 +1,6 @@
 #include "gopro4.h"
 #include "slconfig.h"
 #include "slserver.h"
-#ifdef SLSERVER_WIN32
-#include <windows.h>
-#endif
 #ifdef SLSERVER_LINUX
 #include <time.h>
 #include <sys/time.h>
@@ -13,6 +10,15 @@
 #endif
 #include <string.h>
 #include <errno.h>
+#include "global.h"
+extern "C"
+{
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libswscale/swscale.h>
+#include <libavdevice/avdevice.h>
+#include <libavutil/imgutils.h>
+};
 
 #define MAX_BUFFER_LEN 4096
 
@@ -128,11 +134,20 @@ static const gopro4_control _gopro4[]= {
 	{"gopro_stop_streaming","http://10.5.5.9/gp/gpControl/execute?p1=gpStream&c1=stop"}
 };
 
-gopro4::gopro4():_conn(4096,16){
+int gopro4::ffmpeg_init = 0;
+
+gopro4::gopro4(int trans_t):_conn(4096,16){
 	_recv = INVALID_SOCKET;
 	_send = INVALID_SOCKET;
 	_heartbeat_sender = INVALID_SOCKET; 
 	_recv_buffer = new char[MAX_BUFFER_LEN];
+	_trans_type = trans_t;
+	if (ffmpeg_init <= 0)
+	{
+		av_register_all();
+		avformat_network_init();
+		ffmpeg_init ++ ;
+	}
 }
 
 gopro4::~gopro4() {
@@ -141,43 +156,45 @@ gopro4::~gopro4() {
 
 bool gopro4::init() {
 	SOCKADDR_IN servAddr;
-	unsigned long ul = 1;
+	//unsigned long ul = 1;
+	if(_trans_type == GOPRO4_TRANSFER_PORT) {
+		_recv = socket(AF_INET,SOCK_DGRAM,0);
+		if(_recv == INVALID_SOCKET) {
+			LOGOUT("***ERROR*** Create SOCKET ERROR\n");
+			return false;
+		}
+		/*
+		if (ioctlsocket(_recv, FIONBIO, &ul) == SOCKET_ERROR) {
+			LOGOUT("***ERROR*** SET SOCKET NONBLOCK ERROR\n");
+			return false;
+		}
+		*/
+		servAddr.sin_family = AF_INET;
+		servAddr.sin_port = htons(short(GOPRO4_UDP_PORT));
+	#ifdef SLSERVER_WIN32
+		servAddr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
+	#else
+		servAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	#endif
+		if(bind(_recv,(SOCKADDR*)&servAddr,sizeof(SOCKADDR_IN)) == SOCKET_ERROR) {
+			LOGOUT("***ERROR*** Bind ADDRESS ERROR\n");
+			return false;
+		}
+		
+		_send = socket(AF_INET,SOCK_DGRAM,0);
+		if(_send == INVALID_SOCKET) {
+			LOGOUT("***ERROR*** Create SOCKET ERRor\n");
+			return false;
+		}
+		
+	}
+	
+	_heartbeat_sender = socket(AF_INET, SOCK_DGRAM, 0);
+	if (_heartbeat_sender == INVALID_SOCKET) {
+		LOGOUT("***ERROR*** Create SOCKET ERRor\n");
+		return false;
+	}
 
-	_recv = socket(AF_INET,SOCK_DGRAM,0);
-	if(_recv == INVALID_SOCKET) {
-		LOGOUT("***ERROR*** Create SOCKET ERROR\n");
-		return false;
-	}
-	/*
-	if (ioctlsocket(_recv, FIONBIO, &ul) == SOCKET_ERROR) {
-		LOGOUT("***ERROR*** SET SOCKET NONBLOCK ERROR\n");
-		return false;
-	}
-	*/
-	servAddr.sin_family = AF_INET;
-	servAddr.sin_port = htons(short(GOPRO4_UDP_PORT));
-#ifdef SLSERVER_WIN32
-	servAddr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
-#else
-	servAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-#endif
-	if(bind(_recv,(SOCKADDR*)&servAddr,sizeof(SOCKADDR_IN)) == SOCKET_ERROR) {
-		LOGOUT("***ERROR*** Bind ADDRESS ERROR\n");
-		return false;
-	}
-	
-	_send = socket(AF_INET,SOCK_DGRAM,0);
-	if(_send == INVALID_SOCKET) {
-		LOGOUT("***ERROR*** Create SOCKET ERRor\n");
-		return false;
-	}
-	
-	_heartbeat_sender = socket(AF_INET,SOCK_DGRAM,0);
-	if(_heartbeat_sender == INVALID_SOCKET) {
-		LOGOUT("***ERROR*** Create SOCKET ERRor\n");
-		return false;
-	}
-	
 	_heartbeat_addr.sin_family = AF_INET;
 	_heartbeat_addr.sin_port = htons(8554);
 #ifdef SLSERVER_WIN32
@@ -260,18 +277,178 @@ void* gopro4::transfer(void* user) {
 	return NULL;
 }
 
+void* gopro4::transfer_stream(void* data) {
+	gopro4* pointer = (gopro4*)data;
+	AVFormatContext* pFormatCtx;
+	AVCodecContext* pCodecCtx;
+	AVCodec* pCodec;
+	int videoindex;
+	int i;
+	AVFrame	*pFrame;		
+	int ret, got_picture,got_output;
+	AVPacket *packet;
+	AVInputFormat *ifmt;
+	AVPacket *pktOut;
+	AVCodecContext* pJpegCodecCtx;
+	AVCodec* pJpegCodec;
+	
+	ifmt = av_find_input_format("mpegts");
+	pFormatCtx = avformat_alloc_context();
+	
+	if (avformat_open_input(&pFormatCtx, "udp://10.5.5.9:8554" ,ifmt, NULL) != 0) {
+		LOGOUT("***ERROR*** Couldn't open input stream.\n");
+		return NULL;
+	}
+	
+	if (avformat_find_stream_info(pFormatCtx, NULL) < 0)
+	{
+		LOGOUT("Couldn't find stream information.\n");
+		return NULL;
+	}
+	
+	videoindex = -1;
+	for (i = 0; i < pFormatCtx->nb_streams; i++) {
+		if (pFormatCtx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO)
+		{
+			videoindex = i;
+			break;
+		}
+	}
+	if (videoindex == -1)
+	{
+		LOGOUT("Couldn't find a video stream.\n");
+		return NULL;
+	}
+	
+	pCodecCtx = pFormatCtx->streams[videoindex]->codec;
+	pCodec = avcodec_find_decoder(pCodecCtx->codec_id);
+	if (pCodec == NULL)
+	{
+		LOGOUT("Codec not found.\n");
+		return NULL;
+	}
+	if (avcodec_open2(pCodecCtx, pCodec, NULL) < 0)
+	{
+		LOGOUT("Could not open codec.\n");
+		return NULL;
+	}
+	
+	pJpegCodec = avcodec_find_encoder(CODEC_ID_MJPEG);
+	
+	if (!pJpegCodec) {
+        LOGOUT("could not find mjpeg encode\n");
+        return NULL;
+    }
+	
+	pJpegCodecCtx = avcodec_alloc_context3(pJpegCodec);
+    if (!pJpegCodecCtx) {
+        LOGOUT("Could not allocate video codec context\n");
+        return NULL;
+    }
+	
+	pJpegCodecCtx->bit_rate = pCodecCtx->bit_rate;
+	pJpegCodecCtx->width = pCodecCtx->width;
+	pJpegCodecCtx->height = pCodecCtx->height;
+	pJpegCodecCtx->pix_fmt = PIX_FMT_YUVJ420P;
+	pJpegCodecCtx->codec_id = CODEC_ID_MJPEG;
+	pJpegCodecCtx->codec_type = AVMEDIA_TYPE_VIDEO;
+	pJpegCodecCtx->time_base.num = pCodecCtx->time_base.num;
+	pJpegCodecCtx->time_base.den = pCodecCtx->time_base.den;
+	
+	 /* open it */
+    if (avcodec_open2(pJpegCodecCtx, pJpegCodec, NULL) < 0) {
+        LOGOUT("Could not open codec\n");
+        return NULL;
+    }
+	
+	pFrame = av_frame_alloc();
+
+	packet = (AVPacket *)av_malloc(sizeof(AVPacket));
+	pktOut = (AVPacket *)av_malloc(sizeof(AVPacket));
+	
+	//Output Information-----------------------------
+	LOGOUT("File Information---------------------\n");
+	av_dump_format(pFormatCtx, 0, NULL, 0);
+	LOGOUT("-------------------------------------------------\n");
+
+	slglobal.is_stream_running = true;
+	slglobal.frame_alloc_size = 512 * 1024;
+	if (slglobal.frame == NULL)
+		slglobal.frame = (unsigned char*)malloc(slglobal.frame_alloc_size);
+
+	while(pointer->_trans_running) {
+		
+		if (av_read_frame(pFormatCtx, packet) >= 0)
+		{
+			if (packet->stream_index == videoindex)
+			{
+				ret = avcodec_decode_video2(pCodecCtx, pFrame, &got_picture, packet);
+				if (ret < 0)
+				{
+					LOGOUT("Decode Error.\n");
+					break;
+				}
+				if (got_picture)
+				{
+					av_init_packet(pktOut);
+					pktOut->data = NULL;
+					pktOut->size = 0;
+					
+					ret = avcodec_encode_video2(pJpegCodecCtx, pktOut, pFrame, &got_output);
+					if (ret < 0) {
+						LOGOUT("Error encoding frame\n");
+						break;
+					}
+
+					if (got_output) {
+#ifdef SLSERVER_LINUX
+						pthread_mutex_lock(&slglobal.frame_lock);
+#else
+						LOCK_GLOBAL_FRAME_LOCK;
+#endif
+						if(pktOut->size > slglobal.frame_alloc_size) {
+			
+							if(slglobal.frame != NULL)
+								free(slglobal.frame);
+							
+							slglobal.frame = (unsigned char*)malloc(pktOut->size + 1024);
+							slglobal.frame_alloc_size = pktOut->size + 1024;
+						}
+						slglobal.frame_size = pktOut->size;
+						slglobal.frame_count++;
+
+						memcpy(slglobal.frame,pktOut->data,pktOut->size);
+#ifdef SLSERVER_LINUX
+						pthread_mutex_unlock(&slglobal.frame_lock);
+#else
+						UNLOCK_GLOBAL_FRAME_LOCK;
+#endif
+					}
+					av_free_packet(pktOut);
+				}
+			}	
+		} else {
+#ifdef SLSERVER_WIN32
+			Sleep(1);
+#else
+			usleep(1);
+#endif
+		}
+	}
+	slglobal.is_stream_running = false;
+	av_free(packet);
+	av_free(pktOut);
+	av_free(pFrame);
+	avcodec_close(pCodecCtx);
+	avformat_close_input(&pFormatCtx);
+	avcodec_close(pJpegCodecCtx);
+	avcodec_free_context(&pJpegCodecCtx);
+	LOGOUT("*********tranfer return***************\n");
+	return NULL;
+}
+
 bool gopro4::start() {
-	pthread_attr_t attr; 
-	int priority;    
-	struct sched_param param;
-	
-	pthread_attr_init(&attr); 
-	priority=sched_get_priority_max(SCHED_RR);
-	
-	pthread_attr_getschedparam(&attr,&param);
-	param.sched_priority=priority;
-	pthread_attr_setschedparam(&attr,&param);
-	
+
 	if (_is_start)
 		return true;
 
@@ -281,18 +458,26 @@ bool gopro4::start() {
 	
 	pthread_mutex_init(&_beat_int_mutex, NULL);
 	pthread_cond_init(&_beat_int_cond, NULL);
-	
+	pthread_mutex_init(&_client_mutex,NULL);
+
 	if (0 != pthread_create(&_beat_thread, NULL, gopro4::heartbeat, (void*)this)) {
 		printf("***ERROR*** gopro4 when create pthread heart beat thread,%d\n", errno);
 		return false;
 	}
-	
-	if (0 != pthread_create(&_trans_thread, &attr, gopro4::transfer, (void*)this)) {
-		printf("***ERROR*** gopro4 when create pthread transfer thread,%d\n", errno);
-		return false;
+
+	if(_trans_type == GOPRO4_TRANSFER_PORT) {
+		if (0 != pthread_create(&_trans_thread, NULL, gopro4::transfer, (void*)this)) {
+			printf("***ERROR*** gopro4 when create pthread transfer thread,%d\n", errno);
+			return false;
+		}	
+		
+	} else {
+		if (0 != pthread_create(&_trans_thread, NULL, gopro4::transfer_stream, (void*)this)) {
+			printf("***ERROR*** gopro4 when create pthread transfer thread,%d\n", errno);
+			return false;
+		}
 	}
 	
-	pthread_mutex_init(&_client_mutex,NULL);
 	runCommand("gopro_restart_streaming");
 
 	return true;
@@ -319,7 +504,8 @@ void gopro4::stop() {
 }
 
 int gopro4::addClient(int uid,const char* ip) {
-
+	if(_trans_type != GOPRO4_TRANSFER_PORT)
+		return -1;
 	Client c(uid,ip);
 	pthread_mutex_lock(&_client_mutex);
 	_clients.push_back(c);

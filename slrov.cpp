@@ -10,9 +10,7 @@
 #include "arduino_cmd.h"
 #include "ServerConfig.h"
 #include <errno.h>
-#ifdef SLSERVER_WIN32 
-#include <windows.h>
-#endif
+
 
 #define PARSE_COMMAND 0
 #define PARSE_ARGS    1

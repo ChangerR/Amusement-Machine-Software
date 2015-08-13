@@ -3,10 +3,6 @@
 #include "slconfig.h"
 #include <pthread.h>
 
-#ifdef SLSERVER_WIN32
-#include <winsock2.h>
-#endif
-
 #define CLIENT_BUFFER_LEN 1024
 #define CLIENT_CREATING 0
 #define CLIENT_WORKING 1

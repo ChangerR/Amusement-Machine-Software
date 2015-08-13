@@ -5,7 +5,6 @@
 
 #ifdef SLSERVER_WIN32 
 #include <iphlpapi.h>
-#include <windows.h>
 #else
 #include <sys/time.h>
 #endif

@@ -4,9 +4,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include "global.h"
-#ifdef SLSERVER_WIN32
-#include <winsock2.h>
-#endif
+
 #ifdef __linux__
 #include<sys/types.h>  
 #include<sys/socket.h>  
@@ -391,7 +389,7 @@ void SlClient::send_stream() {
 	unsigned char *frame = NULL;
     int frame_size = 0, max_frame_size = 0;
     char buffer[1024] = {0};
-	
+	long frame_id = 0;
 	LOGOUT("preparing header\n");
     sprintf(buffer, "HTTP/1.1 200 OK\r\n" \
             "Access-Control-Allow-Origin: *\r\n" \
@@ -404,27 +402,41 @@ void SlClient::send_stream() {
         return;
     }
 	
-	while(global.is_stream_running) {
+	while(slglobal.is_stream_running) {
 		
-		if(global.frame_size <= 0 || global.frame == NULL)
+		if(slglobal.frame_size <= 0 || slglobal.frame == NULL)
 			break;
 		
-		pthread_mutex_lock(&global.frame_lock);
-		
-		if(max_frame_size < global.frame_size) {
+		if(frame_id == slglobal.frame_count) {
+#ifdef SLSERVER_WIN32
+			Sleep(1);
+#else
+			usleep(1);
+#endif
+			continue;
+		}
+#ifdef SLSERVER_LINUX
+		pthread_mutex_lock(&slglobal.frame_lock);
+#else
+		LOCK_GLOBAL_FRAME_LOCK;
+#endif
+		if(max_frame_size < slglobal.frame_size) {
 			
 			if(frame)
-				delete[] frame;
+				free(frame);
 			
-			frame = new unsigned char[global.frame_alloc_size];
-			max_frame_size = global.frame_alloc_size;
+			frame = (unsigned char* )malloc(slglobal.frame_alloc_size);
+			max_frame_size = slglobal.frame_alloc_size;
 		}
 		
-		memcpy(frame,global.frame,global.frame_size);
-		frame_size = global.frame_size;
-		
-		pthread_mutex_unlock(&global.frame_lock);
-		
+		memcpy(frame,slglobal.frame,slglobal.frame_size);
+		frame_size = slglobal.frame_size;
+		frame_id = slglobal.frame_count;
+#ifdef SLSERVER_LINUX
+		pthread_mutex_unlock(&slglobal.frame_lock);
+#else
+		UNLOCK_GLOBAL_FRAME_LOCK;
+#endif
 		sprintf(buffer, "Content-Type: image/jpeg\r\n" \
                 "Content-Length: %d\r\n" \
                 "\r\n", frame_size);
@@ -438,7 +450,7 @@ void SlClient::send_stream() {
 	}
 	
 	if(frame)
-		delete[] frame;
+		 free(frame);
 }
 
 int SlClient::read() {

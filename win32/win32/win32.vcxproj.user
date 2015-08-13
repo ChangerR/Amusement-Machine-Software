@@ -3,5 +3,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerCommandArguments>-f $(OutDir)slserver.config</LocalDebuggerCommandArguments>
+    <LocalDebuggerEnvironment>$(SolutionDir)..\ffmpeg\bin\ $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
   </PropertyGroup>
 </Project>

@@ -34,5 +34,8 @@ typedef int SOCKET;
 #define closesocket ::close
 #endif
 #define BBBLACK_GPIO30_RESET
-
+#ifdef SLSERVER_WIN32
+#include <winsock2.h>
+#include <windows.h>
+#endif
 #endif
