@@ -341,8 +341,8 @@ void SlClient::send_file(const char* parameter) {
     LOGOUT("trying to serve file \"%s\", extension: \"%s\" mime: \"%s\"\n", parameter, extension, mimetype);
 
     /* build the absolute path to the file */
-    strncat_s(buffer, www_folder, sizeof(buffer) - 1);
-    strncat_s(buffer, parameter, sizeof(buffer) - strlen(buffer) - 1);
+    strncat(buffer, www_folder, sizeof(buffer) - 1);
+    strncat(buffer, parameter, sizeof(buffer) - strlen(buffer) - 1);
 
     /* try to open that file */
     if((lfd = fopen(buffer, "rb")) == NULL) {
