@@ -79,7 +79,7 @@ def connect_handler(event):
 	global isConnect
 	if not isConnect:
 		sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-		sock.connect(('127.0.0.1',8080))
+		sock.connect(('192.168.46.136',8080))
 		lock.acquire()
 		output.AppendText('connect to server....\n')
 		lock.release()

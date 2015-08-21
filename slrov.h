@@ -42,6 +42,8 @@ public:
 	void setMpuEular(float _x,float _y,float _z);
 	
 	void setMs5803_data(float temp,float press);
+	
+	void motor_go(int,int,int,int);
 private:
 	hardware* rov;
 	SlServer* server;

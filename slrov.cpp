@@ -245,37 +245,61 @@ void slrov::stop() {
 	pthread_join(_thread,NULL);
 }
 
+void slrov::motor_go(int _p,int _s,int _lv,int _rv) {
+	float delta;
+	int p,s,lv,rv;
+	char buf[256];
+	delta = _p - _midpoint[PORT_INDEX];
+	p = delta >= 0.f ? (int(delta * _scale_fact[0]) + _midpoint[PORT_INDEX]):(int(delta * _scale_fact[1] * -1) + _midpoint[PORT_INDEX]);
+	delta = _s - _midpoint[STARBORD_INDEX];
+	s = delta >= 0.f ? (int(delta * _scale_fact[2]) + _midpoint[STARBORD_INDEX]):(int(delta * _scale_fact[3] * -1) + _midpoint[STARBORD_INDEX]);
+	delta = _lv - _midpoint[VERTICAL_LEFT_INDEX];
+	lv = delta >= 0.f ? (int(delta * _scale_fact[4]) + _midpoint[VERTICAL_LEFT_INDEX]):(int(delta * _scale_fact[5] * -1) + _midpoint[VERTICAL_LEFT_INDEX]);
+	delta = _rv - _midpoint[VERTICAL_RIGHT_INDEX];
+	rv = delta >= 0.f ? (int(delta * _scale_fact[6]) + _midpoint[VERTICAL_RIGHT_INDEX]):(int(delta * _scale_fact[7] * -1) + _midpoint[VERTICAL_RIGHT_INDEX]);
+	
+	sprintf_s(buf,"go(%d,%d,%d,%d)\r\n",p,s,lv,rv);
+	rov->write(buf);
+}
+
 void* slrov::pid(void* user) {
 	slrov* pointer = (slrov*)user;
-	int _port,_starboard,_vertical_left,_vertical_right;
-	char buf[256];
+	int _port = 0;
+	int _starboard = 0;
+	int _vertical_left = 0;
+	int _vertical_right = 0;
+
 	while(pointer->running) {
 		if(_ABS(pointer->thr) <= 5&&_ABS(pointer->yaw) <= 5
 			&&_ABS(pointer->lift) <= 5) {	
 			
-			_port = (int)(pointer->_power_delta[POWER_INDEX(_ABS(pointer->thr)) + PORT_INDEX] * pointer->_scale_fact[_DERICTION(pointer->thr)]) + pointer->_midpoint[PORT_INDEX];
-			_starboard = (int)(pointer->_power_delta[POWER_INDEX(_ABS(pointer->thr)) + STARBORD_INDEX] *  pointer->_scale_fact[2 + _DERICTION(pointer->thr)]) + pointer->_midpoint[STARBORD_INDEX];
+			_port = pointer->_power_delta[POWER_INDEX(_ABS(pointer->thr)) + PORT_INDEX] * _NEG(pointer->thr) + pointer->_midpoint[PORT_INDEX];
+			_starboard = pointer->_power_delta[POWER_INDEX(_ABS(pointer->thr)) + STARBORD_INDEX] * _NEG(pointer->thr) + pointer->_midpoint[STARBORD_INDEX];
 			
 			if(pointer->thr != 0) {
-				_port += (int)(pointer->_yaws_stable[_ABS(pointer->yaw)] *  pointer->_scale_fact[_DERICTION(pointer->yaw)]);
-				_starboard += (int)(pointer->_yaws_stable[_ABS(pointer->yaw)] *  pointer->_scale_fact[2 + _DERICTION(pointer->yaw * -1)]);
+				_port += pointer->_yaws_stable[_ABS(pointer->yaw)] * _NEG(pointer->yaw);
+				_starboard -= pointer->_yaws_stable[_ABS(pointer->yaw)] * _NEG(pointer->yaw);
 			}else{
-				_port += (int)(pointer->_power_delta[POWER_INDEX(_ABS(pointer->yaw)) + PORT_INDEX] *  pointer->_scale_fact[_DERICTION(pointer->yaw)]);
-				_starboard += (int)(pointer->_power_delta[POWER_INDEX(_ABS(pointer->yaw)) + STARBORD_INDEX] *  pointer->_scale_fact[2 + _DERICTION(pointer->yaw * -1)]);
+				_port += pointer->_power_delta[POWER_INDEX(_ABS(pointer->yaw)) + PORT_INDEX] * _NEG(pointer->yaw);
+				_starboard -= pointer->_power_delta[POWER_INDEX(_ABS(pointer->yaw)) + STARBORD_INDEX] * _NEG(pointer->yaw);
 			}
 			
-			_vertical_left = (int)(pointer->_power_delta[POWER_INDEX(_ABS(pointer->lift)) + VERTICAL_LEFT_INDEX] * pointer->_scale_fact[4 + _DERICTION(pointer->lift)]) + pointer->_midpoint[VERTICAL_LEFT_INDEX];
-			_vertical_right = (int)(pointer->_power_delta[POWER_INDEX(_ABS(pointer->lift)) + VERTICAL_RIGHT_INDEX] * pointer->_scale_fact[6 + _DERICTION(pointer->lift)]) + pointer->_midpoint[VERTICAL_RIGHT_INDEX];
-			
-			if(_port != pointer->port || _starboard != pointer->starboard || pointer->vertical_left != _vertical_left
+			_vertical_left = pointer->_power_delta[POWER_INDEX(_ABS(pointer->lift)) + VERTICAL_LEFT_INDEX] * _NEG(pointer->lift) + pointer->_midpoint[VERTICAL_LEFT_INDEX];
+			_vertical_right = pointer->_power_delta[POWER_INDEX(_ABS(pointer->lift)) + VERTICAL_RIGHT_INDEX] * _NEG(pointer->lift) + pointer->_midpoint[VERTICAL_RIGHT_INDEX];
+						
+		}
+////////////////////////////////////////////
+//this area you can do your pid thing
+
+
+//////////////////////////////////////////
+		if(_port != pointer->port || _starboard != pointer->starboard || pointer->vertical_left != _vertical_left
 					||pointer->vertical_right != _vertical_right) {
 				pointer->port = _port;
 				pointer->starboard = _starboard;
 				pointer->vertical_left = _vertical_left;
 				pointer->vertical_right = _vertical_right;
-				sprintf_s(buf,"go(%d,%d,%d,%d)\r\n",pointer->port,pointer->starboard,pointer->vertical_left,pointer->vertical_right);
-				pointer->rov->write(buf);
-			}
+				pointer->motor_go(pointer->port,pointer->starboard,pointer->vertical_left,pointer->vertical_right);
 		}
 #ifdef SLSERVER_WIN32 
 		Sleep(1);
