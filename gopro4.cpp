@@ -11,6 +11,10 @@
 #include <string.h>
 #include <errno.h>
 #include "global.h"
+#ifndef INT64_C
+#define INT64_C
+#define UINT64_C
+#endif
 extern "C"
 {
 #include <libavcodec/avcodec.h>
