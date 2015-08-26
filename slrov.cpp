@@ -26,8 +26,8 @@ int delta_yaw[] = {10,20,30,40,60};
 #define _NEG(a) (((a) >= 0)?1:-1)
 #define _DERICTION(a) (((a) >= 0)?0:1)
 
-const float AtmosPressure = 1015.f;
-const float WaterDensity = 1.019716f;
+const float Default_AtmosPressure = 1015.f;
+const float Default_WaterDensity = 1.019716f;
 	
 slrov::slrov(SlServer* pointer) {
 	rov = NULL;
@@ -214,6 +214,11 @@ bool slrov::start(const char* s) {
 		if (!server->_config->getInt("POWER5_YAW", &_yaws_stable[5]))
 			_yaws_stable[5] = delta_yaw[4];
 		
+		if (!server->_config->getFloat("ATMOSPRESSURE", &AtmosPressure))
+			AtmosPressure = Default_AtmosPressure;
+		
+		if (!server->_config->getFloat("WATERDENSITY", &WaterDensity))
+			WaterDensity = Default_WaterDensity;
 	} else {
 		printf("***ERROR*** Init Config file error\n");
 		return false;

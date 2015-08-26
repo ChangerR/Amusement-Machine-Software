@@ -36,16 +36,17 @@ Serial::Serial(const char* com) {
 	_user = 0;
 	(overlapped_read) = new OVERLAPPED;
 	(overlapped_write) = new OVERLAPPED;
-	memset(((OVERLAPPED*)overlapped_read),0,sizeof(OVERLAPPED));
-	memset(((OVERLAPPED*)overlapped_write),0,sizeof(OVERLAPPED));
-	((OVERLAPPED*)overlapped_write)->hEvent=CreateEvent(NULL,TRUE,FALSE,NULL);
-	((OVERLAPPED*)overlapped_read)->hEvent=CreateEvent(NULL,TRUE,FALSE,NULL);
+	memset(overlapped_read,0,sizeof(OVERLAPPED));
+	memset(overlapped_write,0,sizeof(OVERLAPPED));
+	hEvent_read = CreateEvent(NULL, TRUE, FALSE, NULL);
+	hEvent_write = CreateEvent(NULL, TRUE, FALSE, NULL);
+
 	running = false;
 }
 
 Serial::~Serial() {	
-	CloseHandle(((OVERLAPPED*)overlapped_read)->hEvent);
-	CloseHandle(((OVERLAPPED*)overlapped_write)->hEvent);
+	CloseHandle(hEvent_read);
+	CloseHandle(hEvent_write);
 	CloseHandle((HANDLE)_user);
 	Sleep(100);	
 	delete overlapped_read;
@@ -75,7 +76,9 @@ bool Serial::touchForCDCReset() {
 	SetupComm(hCom,MAX_SERIALBUFFER_SIZE,MAX_SERIALBUFFER_SIZE);
 	
 	EscapeCommFunction(hCom,CLRDTR);
-	Sleep(100);
+	Sleep(200);
+	EscapeCommFunction(hCom, SETDTR);
+
 	CloseHandle(hCom);
 	
 	return true;
@@ -109,9 +112,9 @@ bool Serial::begin(BUADRATE b) {
 	COMMTIMEOUTS TimeOuts;
 	GetCommTimeouts(hCom,&TimeOuts);
 	
-	TimeOuts.ReadIntervalTimeout = 20;
-	TimeOuts.ReadTotalTimeoutMultiplier = 40;
-	TimeOuts.ReadTotalTimeoutConstant = 50;
+	TimeOuts.ReadIntervalTimeout = MAXWORD;
+	TimeOuts.ReadTotalTimeoutMultiplier = 0;
+	TimeOuts.ReadTotalTimeoutConstant = 0;
 	
 	TimeOuts.WriteTotalTimeoutMultiplier = 40;
 	TimeOuts.WriteTotalTimeoutConstant = 50;
@@ -128,10 +131,13 @@ int Serial::write(const char* buf,int len) {
 	DWORD ret = 0;
 	if (!running)
 		return -1;
-	ResetEvent(((OVERLAPPED*)overlapped_write)->hEvent);
-	if(!WriteFile(hCom,buf,len,&ret,((OVERLAPPED*)overlapped_write))){
+	
+	memset(overlapped_write, 0, sizeof(OVERLAPPED));
+	overlapped_write->hEvent = hEvent_write;
+
+	if(!WriteFile(hCom,buf,len,&ret,overlapped_write)){
 		if(GetLastError() == ERROR_IO_PENDING) {
-			WaitForSingleObject(((OVERLAPPED*)overlapped_write)->hEvent,INFINITE);
+			WaitForSingleObject(overlapped_write->hEvent,INFINITE);
 		}else
 			return -1;
 	}
@@ -141,25 +147,41 @@ int Serial::write(const char* buf,int len) {
 
 int Serial::read() {
 	HANDLE hCom = (HANDLE)_user;
-	DWORD nWrite = MAX_SERIALBUFFER_SIZE - _wpos;
+	DWORD nRead = MAX_SERIALBUFFER_SIZE - _wpos,nlen;
 	COMSTAT ComStat;
 	DWORD dwErrorFlags;
-
+	DWORD nError;
 	if (!running)
 		return -1;
-	ClearCommError(hCom, &dwErrorFlags, &ComStat);
-	nWrite = min(ComStat.cbInQue, nWrite);
-	ResetEvent(((OVERLAPPED*)overlapped_read)->hEvent);
-	if(ReadFile(hCom,_buffer + _wpos,nWrite,&nWrite,((OVERLAPPED*)overlapped_read)) == FALSE) {
-		if(GetLastError() == ERROR_IO_PENDING) {
-			WaitForSingleObject(((OVERLAPPED*)overlapped_read)->hEvent,INFINITE);
-		}else
-			return -1;
+
+	memset(overlapped_read, 0, sizeof(OVERLAPPED));
+	
+	if (!ClearCommError(hCom, &dwErrorFlags, &ComStat)) {
+		printf("Serial clear comm error :%d\n",GetLastError());
+		return -1;
 	}
 	
-	_wpos += nWrite;
+	nlen = min(ComStat.cbInQue, nRead);
+	if (nlen == 0) {
+		return -1;
+	}
+		
+	overlapped_read->hEvent = hEvent_read;
 
-	Sleep(1);
+	if(ReadFile(hCom,_buffer + _wpos,nlen,&nRead,overlapped_read) == FALSE) {
+		if ((nError = GetLastError()) == ERROR_IO_PENDING) {
+			WaitForSingleObject(overlapped_read->hEvent,INFINITE);
+		}
+		else if(nError == ERROR_INVALID_HANDLE){	
+			printf("read Invaild erorr\n");
+			return -1;
+		}
+			
+	}
+	//((OVERLAPPED*)overlapped_read)->
+	_wpos += (nRead == 0 ? nlen : nRead);
+
+	//Sleep(1);
 	return _wpos;
 }
 

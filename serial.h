@@ -1,7 +1,7 @@
 #ifndef __SLSERILA__H
 #define __SLSERILA__H
 #include "slconfig.h"
-#define MAX_SERIALBUFFER_SIZE 4096
+#define MAX_SERIALBUFFER_SIZE 4096*4
 enum BUADRATE {
 	_B9600,_B115200,
 };
@@ -35,8 +35,10 @@ private:
 	int _serial_fd;
 #endif
 #ifdef SLSERVER_WIN32
-	void* overlapped_read;
-	void* overlapped_write;
+	OVERLAPPED* overlapped_read;
+	OVERLAPPED* overlapped_write;
+	HANDLE hEvent_read;
+	HANDLE hEvent_write;
 #endif
 };
 #endif

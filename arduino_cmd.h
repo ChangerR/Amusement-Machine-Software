@@ -18,16 +18,19 @@ public:
 	arduino_cmd(){};
 	virtual ~arduino_cmd();
 	
-	static bool parse_command(const char* );
+	static bool parse(const char c);
+	static void parse_command(const char* );
 	static int execute();
 	static int add_command(const char* ,ino_execute,void*);
 	
 	static ino_command inocmd[];
 	static int cmd_count;
 public:
-	static char argument[][MAX_CMD_ARGUMENT_LEN];
+	static char argv[][MAX_CMD_ARGUMENT_LEN];
 	static int args;
 	static char cmd[MAX_CMD_ARGUMENT_LEN];
+	static int parseState;
+	static int byteOffset;
 };
 
 #endif

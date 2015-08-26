@@ -215,7 +215,7 @@ int Serial::println(const char* s,...) {
 	return write(buf,nWrite+1);
 }
 
-#ifndef BBBLACK_GPIO30_RESET	
+#if !defined(RESET_GPIO_PORT)
 bool Serial::touchForCDCReset() {
 	if(begin(_B115200) == false)
 		return false;
@@ -236,16 +236,16 @@ bool Serial::touchForCDCReset() {
 	fd = open("/sys/class/gpio/export",O_WRONLY);
 	if(fd == -1)
 		return false;
-	::write(fd,"30",2);
+	::write(fd,RESET_GPIO_PORT,2);
 	::close(fd);
 	
-	fd = open("/sys/class/gpio/gpio30/direction",O_WRONLY);
+	fd = open(RESET_GPIO_DERICTION,O_WRONLY);
 	if(fd == -1)
 		return false;
 	::write(fd,"out",3);
 	::close(fd);
 	
-	fd = open("/sys/class/gpio/gpio30/value",O_WRONLY);
+	fd = open(RESET_GPIO_VALUE,O_WRONLY);
 	if(fd == -1)
 		return false;
 	::write(fd,"0",1);
@@ -256,7 +256,7 @@ bool Serial::touchForCDCReset() {
 	fd = open("/sys/class/gpio/unexport",O_WRONLY);
 	if(fd == -1)
 		return false;
-	::write(fd,"30",2);
+	::write(fd,RESET_GPIO_PORT,2);
 	::close(fd);
 	return true;
 }	

@@ -57,7 +57,7 @@ private:
 	float mpu_roll,mpu_pitch,mpu_yaw;
 	float ms5803_temp,ms5803_press;
 	float depth,mpu_campass;
-
+	float AtmosPressure,WaterDensity;
 	int _midpoint[4];
 	int _power_delta[24];
 	int _yaws_stable[6];

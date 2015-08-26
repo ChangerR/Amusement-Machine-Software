@@ -63,20 +63,22 @@ void* __cdecl hardware::recv_thread(void* data) {
 //void* hardware::recv_thread(void* data) {
 //#endif
 	hardware* t = (hardware*)data;
-	char buf[128];
+	char buf[512];
 	
 	while(t->running) {
 		
-		if(t->serial->readline(buf) != -1 && arduino_cmd::parse_command(buf)) {
+		if(t->serial->readline(buf) != -1 ) {
 //			LOGOUT("***INFO*** SERIAL:%s\n",buf);
-			arduino_cmd::execute();
+			arduino_cmd::parse_command(buf);
 		}
+		else {
 #ifdef SLSERVER_WIN32
-		Sleep(1);
+			Sleep(1);
 #elif defined(SLSERVER_LINUX)
-	//	sched_yield();
-		usleep(1);
+			//	sched_yield();
+			usleep(1);
 #endif
+		}
 	}
 	LOGOUT("***INFO*** Hardware Return OK\n");
 	return NULL;

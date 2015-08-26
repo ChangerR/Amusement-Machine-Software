@@ -33,7 +33,19 @@ typedef int SOCKET;
 #define SOCKET_ERROR -1
 #define closesocket ::close
 #endif
-#define BBBLACK_GPIO30_RESET
+
+#ifdef BEAGLEBONEBLACK
+#define RESET_GPIO_PORT "30"
+#define RESET_GPIO_DERICTION "/sys/class/gpio/gpio30/direction"
+#define RESET_GPIO_VALUE "/sys/class/gpio/gpio30/value"
+#endif
+
+#ifdef ODROID_XU4
+#define RESET_GPIO_PORT "18"
+#define RESET_GPIO_DERICTION "/sys/class/gpio/gpio18/direction"
+#define RESET_GPIO_VALUE "/sys/class/gpio/gpio18/value"
+#endif
+
 #ifdef SLSERVER_WIN32
 #include <winsock2.h>
 #include <windows.h>
