@@ -68,7 +68,7 @@ void* __cdecl hardware::recv_thread(void* data) {
 	while(t->running) {
 		
 		if(t->serial->readline(buf) != -1 ) {
-//			LOGOUT("***INFO*** SERIAL:%s\n",buf);
+			//LOGOUT("***INFO*** SERIAL:%s\n",buf);
 			arduino_cmd::parse_command(buf);
 		}
 		else {

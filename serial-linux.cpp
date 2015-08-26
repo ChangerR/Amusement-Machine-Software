@@ -157,9 +157,15 @@ int Serial::readline(char* buf) {
 			if(_buffer[nRead] == '\n')
 				break;
 		}
-	}while(running&&_buffer[nRead] != '\n'&&read() != -1);
 		
-	if(_buffer[nRead] == '\n'&&_wpos) {
+		//fix this :fix serial error
+		if (_buffer[nRead] == '\n' && nRead < _wpos)
+			break;
+		
+	}while(running&&read() != -1);
+		
+	if(_buffer[nRead] == '\n' && nRead < _wpos) {
+		
 		memcpy(buf,_buffer,nRead);
 		if (buf[nRead - 1] == '\r') {
 			buf[nRead - 1] = 0;
@@ -175,8 +181,6 @@ int Serial::readline(char* buf) {
 		_wpos -= nRead;
 		copy_iner_buffer(_buffer,nRead,0,_wpos);
 		//fix serial port read error block
-		if(_wpos == 0)
-			_buffer[0] = 0;
 
 		return nRead - 1;
 	}

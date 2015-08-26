@@ -50,12 +50,13 @@ inline void copy_socket_buffer(char* buf,int from,int to,int len) {
 
 int SlClient::getline_no_remove(char* buf,int max_len) {
 	int nRead = 0;
+
 	for(;nRead < _wpos;nRead++) {
 		if(_buffer[nRead] == '\n')
 			break;
 	}
 	
-	if(_buffer[nRead] == '\n') {
+	if(_buffer[nRead] == '\n' && nRead < _wpos) {
 		if(nRead > max_len)
 			return -1;
 		memcpy(buf,_buffer,nRead);
@@ -74,12 +75,13 @@ int SlClient::getline_no_remove(char* buf,int max_len) {
 
 int SlClient::getline(char* buf,int max_len) {
 	int nRead = 0,len;
+
 	for(;nRead < _wpos;nRead++) {
 		if(_buffer[nRead] == '\n')
 			break;
 	}
 	
-	if(_buffer[nRead] == '\n') {
+	if(_buffer[nRead] == '\n' && nRead < _wpos) {
 		if(nRead > max_len) {
 			LOGOUT("***ERROR*** string big than max len\n");
 			return -1;

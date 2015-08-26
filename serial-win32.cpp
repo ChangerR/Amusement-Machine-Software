@@ -157,7 +157,7 @@ int Serial::read() {
 	memset(overlapped_read, 0, sizeof(OVERLAPPED));
 	
 	if (!ClearCommError(hCom, &dwErrorFlags, &ComStat)) {
-		printf("Serial clear comm error :%d\n",GetLastError());
+//		printf("Serial clear comm error :%d\n",GetLastError());
 		return -1;
 	}
 	
@@ -180,7 +180,7 @@ int Serial::read() {
 	}
 	//((OVERLAPPED*)overlapped_read)->
 	_wpos += (nRead == 0 ? nlen : nRead);
-
+	printf("read serial data len:%d\n", _wpos);
 	//Sleep(1);
 	return _wpos;
 }
@@ -211,14 +211,21 @@ int Serial::read(char* buf,int len) {
 
 int Serial::readline(char* buf) {
 	int nRead = 0,nRet = 0;
+
 	do {
+
 		for(;nRead < _wpos;nRead++) {
 			if(_buffer[nRead] == '\n')
 				break;
 		}
-	}while(running&&_buffer[nRead] != '\n'&&read() != -1);
-	
-	if(_buffer[nRead] == '\n' && _wpos) {
+//fix this :fix serial error
+		if (_buffer[nRead] == '\n' && nRead < _wpos)
+			break;
+		
+	}while(running&&read() != -1);
+
+	//fix serial error
+	if (_buffer[nRead] == '\n' && nRead < _wpos) {
 		memcpy(buf,_buffer,nRead);
 		if (buf[nRead - 1] == '\r') {
 			buf[nRead - 1] = 0;
@@ -229,8 +236,10 @@ int Serial::readline(char* buf) {
 			nRet = nRead - 1;
 		}
 		nRead++;
+		
 		_wpos -= nRead;
 		copy_iner_buffer(_buffer,nRead,0,_wpos);
+		
 		return nRead - 1;
 	}
 	
