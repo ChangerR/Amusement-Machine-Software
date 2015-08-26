@@ -11,7 +11,7 @@
 #include <errno.h>
 #include <pthread.h>
 #include <stdarg.h>
-#include<sys/ioctl.h>
+#include <sys/ioctl.h>
 
 static int getDCBBuadRate(BUADRATE b) {
 	int br = B115200;
@@ -80,6 +80,7 @@ bool Serial::begin(BUADRATE b) {
 		return false;
 	} 
 	
+	_wpos = 0;
 	running = true;
 	
 	return true;
@@ -105,18 +106,21 @@ int Serial::write(const char* buf,int len) {
 }
 
 int Serial::read() {
-	int nWrite = MAX_SERIALBUFFER_SIZE - _wpos - 1;	
+	int nRead = MAX_SERIALBUFFER_SIZE - _wpos - 1;	
 	int len = 0;
 	if(!running)
 		return -1;
-	
-	if((len = ::read(_serial_fd,_buffer + _wpos,nWrite)) <= 0 )
+//	printf("serial hardware read enter\n");	
+	if((len = ::read(_serial_fd,_buffer + _wpos,nRead)) < 0 ) {
+		if(errno != EAGAIN)
+			printf("***ERROR*** when read serial occur error errno: %d\n",errno);
 		return -1;
-		
+	}
+//	printf("read serial data len:%d \n",len);	
 	_wpos += len;
 	//sched_yield();
 	_buffer[_wpos] = 0;
-	usleep(1);	
+	//usleep(1);	
 	return _wpos;
 }
 
@@ -146,6 +150,8 @@ int Serial::available() {
 
 int Serial::readline(char* buf) {
 	int nRead = 0,nRet = 0;
+	
+//	printf("readline enter\n");
 	do {
 		for(;nRead < _wpos;nRead++) {
 			if(_buffer[nRead] == '\n')
@@ -153,8 +159,7 @@ int Serial::readline(char* buf) {
 		}
 	}while(running&&_buffer[nRead] != '\n'&&read() != -1);
 		
-	if(_buffer[nRead] == '\n') {
-		//LOGOUT("+++info+++ %s %d\n",_buffer,nRead);
+	if(_buffer[nRead] == '\n'&&_wpos) {
 		memcpy(buf,_buffer,nRead);
 		if (buf[nRead - 1] == '\r') {
 			buf[nRead - 1] = 0;
@@ -164,9 +169,15 @@ int Serial::readline(char* buf) {
 			buf[nRead] = 0;
 			nRet = nRead - 1;
 		}
-		nRead++;
+		nRead += 1;
+		
+		//LOGOUT("+++info+++ %d,%d\n",nRead,_wpos);
 		_wpos -= nRead;
 		copy_iner_buffer(_buffer,nRead,0,_wpos);
+		//fix serial port read error block
+		if(_wpos == 0)
+			_buffer[0] = 0;
+
 		return nRead - 1;
 	}
 	

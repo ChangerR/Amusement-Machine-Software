@@ -218,7 +218,7 @@ int Serial::readline(char* buf) {
 		}
 	}while(running&&_buffer[nRead] != '\n'&&read() != -1);
 	
-	if(_buffer[nRead] == '\n') {
+	if(_buffer[nRead] == '\n' && _wpos) {
 		memcpy(buf,_buffer,nRead);
 		if (buf[nRead - 1] == '\r') {
 			buf[nRead - 1] = 0;
