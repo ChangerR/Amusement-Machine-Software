@@ -19,3 +19,6 @@ Debug/*
 server_test/*
 win32/win32/Debug/*
 win32/Debug/*
+tags
+test
+slsever

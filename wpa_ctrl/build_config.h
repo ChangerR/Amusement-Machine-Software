@@ -47,4 +47,6 @@
 #endif /* USE_INTERNAL_CRYPTO */
 #endif /* CONFIG_WIN32_DEFAULTS */
 
+#define CONFIG_CTRL_IFACE
+#define CONFIG_CTRL_IFACE_UNIX
 #endif /* BUILD_CONFIG_H */
