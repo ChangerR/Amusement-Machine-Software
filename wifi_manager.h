@@ -7,9 +7,10 @@
 #include "wpa_ctrl.h"
 #include "list.h"
 
+#define WIFI_BUFFER_LEN 1024
 struct wifi_status {
 	char bssid[8];
-	char ssid[256];
+	char ssid[128];
 	int id;
 	char ip_address[16];
 };
@@ -17,9 +18,8 @@ struct wifi_status {
 struct wifi_scan {
 	char bssid[8];
 	int frequency;
-	int signal;
-	int level;
-	int flags;
+	int signal_level;
+	char flags[128];
 	char ssid[128];
 };
 
@@ -62,6 +62,7 @@ private:
 	
 	wpa_ctrl* _event_ctrl;
 	
+	char* _buffer;
 };
 #endif
 
