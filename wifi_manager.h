@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include "wpa_ctrl.h"
 #include "list.h"
+#include <pthread.h>
 
 #define WIFI_BUFFER_LEN 1024
 struct wifi_status {
@@ -29,7 +30,7 @@ struct wifi_list {
 	int flag;
 };
 
-typedef void (*wifi_event_call)(const char*,void*);
+typedef void (*wifi_event_func)(const char*,void*);
 
 class wifi_manager {
 	
@@ -55,15 +56,42 @@ public:
 	
 	bool save_wificonfig();
 	
-	void onEvent(const char* event,wifi_event_call _call,void* data);
+	void onEvent(const char* event,wifi_event_func _func,void* data);
+	
+	static void* _wifi_recv_thread(void* data);
 	
 private:
+
+	struct wifi_event_call {
+		char event[128];
+		wifi_event_func _func;
+		void* data;
+	};
+	
+	pthread_t _thread;
+	
+	bool _is_running;
+	
 	wpa_ctrl* _ctrl;
 	
 	wpa_ctrl* _event_ctrl;
 	
 	char* _buffer;
+	
+	list<wifi_event_call*> _call_list;
 };
+
+template <class T>
+inline void clearWifiList(list<T> *_list) {
+	
+	if(!_list)
+		return;
+	
+	for(list<T>::node* _scan = _list->begin();_scan != _list->end(); _scan = _scan->next) {
+		delete _scan->element;
+	}
+}
+
 #endif
 
 #endif
