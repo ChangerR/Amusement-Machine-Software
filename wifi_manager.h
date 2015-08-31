@@ -4,20 +4,21 @@
 
 #ifdef SLSERVER_LINUX
 #include <unistd.h>
-#include "wpa_ctrl.h"
+#include "wpa_ctrl/wpa_ctrl.h"
 #include "list.h"
 #include <pthread.h>
+#include <errno.h>
 
 #define WIFI_BUFFER_LEN 1024
 struct wifi_status {
-	char bssid[8];
+	unsigned char bssid[8];
 	char ssid[128];
 	int id;
 	char ip_address[16];
 };
 
 struct wifi_scan {
-	char bssid[8];
+	unsigned char bssid[8];
 	int frequency;
 	int signal_level;
 	char flags[128];
@@ -30,7 +31,7 @@ struct wifi_list {
 	int flag;
 };
 
-typedef void (*wifi_event_func)(const char*,void*);
+typedef void (*wifi_event_func)(void*);
 
 class wifi_manager {
 	
@@ -60,6 +61,8 @@ public:
 	
 	static void* _wifi_recv_thread(void* data);
 	
+	void clear();
+
 private:
 
 	struct wifi_event_call {
@@ -81,14 +84,23 @@ private:
 	list<wifi_event_call*> _call_list;
 };
 
-template <class T>
-inline void clearWifiList(list<T> *_list) {
+inline void clearWifiList(list<wifi_list*> *_list) {
 	
 	if(!_list)
 		return;
 	
-	for(list<T>::node* _scan = _list->begin();_scan != _list->end(); _scan = _scan->next) {
-		delete _scan->element;
+	for(list<wifi_list*>::node* _p = _list->begin();_p != _list->end(); _p = _p->next) {
+		delete _p->element;
+	}
+}
+
+inline void clearWifiList(list<wifi_scan*> *_list) {
+	
+	if(!_list)
+		return;
+	
+	for(list<wifi_scan*>::node* _p = _list->begin();_p != _list->end(); _p = _p->next) {
+		delete _p->element;
 	}
 }
 

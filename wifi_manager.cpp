@@ -2,7 +2,7 @@
 
 #ifdef SLSERVER_LINUX
 #include "util.h"
-#include "common/common.h"
+#include <string.h>
 
 wifi_manager::wifi_manager() {
 	_ctrl = NULL;
@@ -12,6 +12,13 @@ wifi_manager::wifi_manager() {
 }
 
 wifi_manager::~wifi_manager() {
+
+	_is_running = false;
+
+	pthread_join(_thread,NULL);
+
+	clear();
+
 	if(_ctrl)
 		wpa_ctrl_close(_ctrl);
 	
@@ -31,14 +38,16 @@ bool wifi_manager::init(const char* path) {
 		
 		_ctrl = wpa_ctrl_open(path);
 		
-		if(_ctrl)
+		if(!_ctrl) {
+			printf("wifi open %s failed\n",path);
 			break;
-		
+		}
 		_event_ctrl = wpa_ctrl_open(path);
 		
-		if(_event_ctrl)
+		if(!_event_ctrl) {
+			printf("wifi open %s failed\n",path);
 			break;
-	
+		}
 		if(wpa_ctrl_attach(_event_ctrl))
 			break;
 		
@@ -59,7 +68,7 @@ bool wifi_manager::init(const char* path) {
 bool wifi_manager::getWifiStatus(wifi_status* _status) {
 	
 	bool ret = false;
-	int len = WIFI_BUFFER_LEN - 1;
+	size_t len = WIFI_BUFFER_LEN - 1;
 	char* p_start,*p_end;
 	do {
 		if(_status==NULL || _ctrl == NULL)
@@ -79,18 +88,19 @@ bool wifi_manager::getWifiStatus(wifi_status* _status) {
 			*p_end = 0;
 			
 			if(strncmp(p_start,"bssid=",6) == 0) {
-				hwaddr_aton(p_start + 6,_status->bssid);
+				sl_hwaddr_aton(p_start + 6,_status->bssid);
 			}else if(strncmp(p_start,"id=",3) == 0) {
 				_status->id = parse_int_dec(p_start + 3);
 			}else if(strncmp(p_start,"ssid=",5) == 0) {
 				strncpy(_status->ssid,p_start + 5 ,128);
-			}else if(strncmp(p_start,"ip_address",10) == 0) {
-				strncpy(_status->ip_address,p_start + 10,16);
+			}else if(strncmp(p_start,"ip_address=",11) == 0) {
+				strncpy(_status->ip_address,p_start + 11,16);
 			}
 			
 			p_start = p_end + 1;
 		}
-		
+	
+		ret = true;
 	}while(0);
 	
 	return ret;
@@ -98,7 +108,7 @@ bool wifi_manager::getWifiStatus(wifi_status* _status) {
 	
 bool wifi_manager::getAvaiableWifi(list<wifi_scan*> *_list) {
 	bool ret = false;
-	int len = WIFI_BUFFER_LEN - 1;
+	size_t len = WIFI_BUFFER_LEN - 1;
 	char* p_start,*p_end;
 	do {
 		if(_list==NULL || _ctrl == NULL)
@@ -116,14 +126,18 @@ bool wifi_manager::getAvaiableWifi(list<wifi_scan*> *_list) {
 		
 		p_start = _buffer;
 		
+		
 		while(p_start < _buffer + len) {
+		//	printf("--line:%s\n",p_start);
 			p_end = sl_find_first_char(p_start,'\n');
 			*p_end = 0;
 			
-			if(strncmp(p_start,"bssid",5) == 0) 
-				continue;
-			else {
+			if(strncmp(p_start,"bssid",5) != 0) 
+			{
 				wifi_scan* _scan = new wifi_scan;
+
+				memset(_scan,0,sizeof(wifi_scan));
+
 				char _buf[256];
 				char *p1 = p_start,*p2 = _buf;
 				
@@ -133,7 +147,7 @@ bool wifi_manager::getAvaiableWifi(list<wifi_scan*> *_list) {
 				*p2 = 0;
 				p1 ++;
 				
-				hwaddr_aton(_buf,_scan->bssid);
+				sl_hwaddr_aton(_buf,_scan->bssid);
 				
 				p2 = _buf;
 				while(*p1 != '\t')
@@ -167,7 +181,7 @@ bool wifi_manager::getAvaiableWifi(list<wifi_scan*> *_list) {
 			
 			p_start = p_end + 1;
 		}
-		
+		ret = true;	
 	}while(0);
 	
 	return ret;
@@ -184,17 +198,16 @@ bool wifi_manager::connectWifi(const char* ssid) {
 		for(list<wifi_list*>::node* _p_wifi = _configList.begin(); _p_wifi != _configList.end();
 					_p_wifi = _p_wifi->next) {
 			if(strcmp(_p_wifi->element->ssid,ssid) == 0) {
-				_wifi = _p_wifi;
+				_wifi = _p_wifi->element;
 				break;
 			}			
 		}
 		
-		clearWifiList(&_configList);
-		
-		if(_p_wifi) {
-			connectWifi(_p_wifi->id);
-			ret = true;
+		if(_wifi) {
+			ret = connectWifi(_wifi->id);
 		}
+
+		clearWifiList(&_configList);
 	}while(0);
 	
 	return ret;
@@ -202,15 +215,16 @@ bool wifi_manager::connectWifi(const char* ssid) {
 
 bool wifi_manager::connectWifi(int id) {
 	bool ret = false;
-	int len = WIFI_BUFFER_LEN - 1;
+	size_t len = WIFI_BUFFER_LEN - 1;
 	char buf[64] = {0};
 	
 	do {
 		sprintf(buf,"SELECT_NETWORK %d",id);
 		
-		if(wpa_ctrl_request(_ctrl,buf,sizeof(buf),_buffer,&len,NULL))
+		if(wpa_ctrl_request(_ctrl,buf,strlen(buf),_buffer,&len,NULL))
 			break;
 		
+		//printf("%s\n",buf);
 		ret = true;
 	}while(0);
 	
@@ -219,7 +233,7 @@ bool wifi_manager::connectWifi(int id) {
 
 bool wifi_manager::listConfigedWifi(list<wifi_list*> *_list) {
 	bool ret = false;
-	int len = WIFI_BUFFER_LEN - 1;
+	size_t len = WIFI_BUFFER_LEN - 1;
 	char* p_start,*p_end;
 	do {
 		if(_list==NULL || _ctrl == NULL)
@@ -229,16 +243,14 @@ bool wifi_manager::listConfigedWifi(list<wifi_list*> *_list) {
 			break;
 		
 		_buffer[len] = 0;
-		
 		p_start = _buffer;
 		
 		while(p_start < _buffer + len) {
 			p_end = sl_find_first_char(p_start,'\n');
 			*p_end = 0;
 			
-			if(strncmp(p_start,"bssid",5) == 0) 
-				continue;
-			else {
+			if(strncmp(p_start,"network",7) != 0) 
+			{
 				wifi_list *_wifi_list = new wifi_list;
 				char _buf[256];
 				char *p1 = p_start,*p2 = _buf;
@@ -249,9 +261,9 @@ bool wifi_manager::listConfigedWifi(list<wifi_list*> *_list) {
 				*p2 = 0;
 				p1 ++;
 				
-				_wifi_list->id = parse_int_dec(buf);
+				_wifi_list->id = parse_int_dec(_buf);
 				
-				p2 = buf;
+				p2 = _buf;
 				while(*p1 != '\t')
 					*p2++ = *p1++;
 				
@@ -263,20 +275,24 @@ bool wifi_manager::listConfigedWifi(list<wifi_list*> *_list) {
 				while(*p1 != '\t')p1++;				
 				p1++;
 				
-				p2 = buf;
+				p2 = _buf;
 				while(*p1 != '\t')
 					*p2++ = *p1++;
 				
 				*p2 = 0;
 				p1 ++;
 				
-				if(strncmp(buf,"[CURRENT]",strlen("[CURRENT]")) == 0)
-					_wifi_list->flags = 1;
+				if(strncmp(_buf,"[CURRENT]",strlen("[CURRENT]")) == 0)
+					_wifi_list->flag = 1;
+				else
+					_wifi_list->flag = 0;
 				
 				_list->push_back(_wifi_list);
 			}
 			p_start = p_end + 1;
 		}
+
+		ret = true;
 	}while(0);
 	
 	return ret;
@@ -284,27 +300,36 @@ bool wifi_manager::listConfigedWifi(list<wifi_list*> *_list) {
 
 bool wifi_manager::addWifiNetwork(const char* ssid,const char* passwd) {
 	bool ret = false;
-	int len = WIFI_BUFFER_LEN - 1;
+	size_t len = WIFI_BUFFER_LEN - 1;
 	char buf[256] = {0};
 	int id;
+	char* p;
 	do {
 		if(wpa_ctrl_request(_ctrl,"ADD_NETWORK",sizeof("ADD_NETWORK"),_buffer,&len,NULL))
 			break;
 		
 		_buffer[len] = 0;
-		
+		p = _buffer;
+
+		while(*p != '\n')p++;
+		*p = 0;
 		id = parse_int_dec(_buffer);
 		
-		sprintf(buf,"SET_NETWORK %d SSID %s",id,ssid);
+		//printf("new network id:%s\n",_buffer);
+
+		sprintf(buf,"SET_NETWORK %d ssid \"%s\"",id,ssid);
 		
-		if(wpa_ctrl_request(_ctrl,buf,sizeof(buf),_buffer,&len,NULL))
+		if(wpa_ctrl_request(_ctrl,buf,strlen(buf),_buffer,&len,NULL))
 			break;
 		
-		sprintf(buf,"SET_NETWORK %d PSK %s",id,passwd);
+		printf("%s\n",buf);
+
+		sprintf(buf,"SET_NETWORK %d psk \"%s\"",id,passwd);
 		
-		if(wpa_ctrl_request(_ctrl,buf,sizeof(buf),_buffer,&len,NULL))
+		if(wpa_ctrl_request(_ctrl,buf,strlen(buf),_buffer,&len,NULL))
 			break;
-		
+		_buffer[len] = 0;	
+		//printf("%s\n%s",buf,_buffer);
 		ret = true;
 	}while(0);
 	
@@ -313,7 +338,7 @@ bool wifi_manager::addWifiNetwork(const char* ssid,const char* passwd) {
 
 bool wifi_manager::save_wificonfig() {
 	bool ret = false;
-	int len - WIFI_BUFFER_LEN - 1;
+	size_t len = WIFI_BUFFER_LEN - 1;
 	
 	do {
 		if(wpa_ctrl_request(_ctrl,"SAVE_CONFIG",sizeof("SAVE_CONFIG"),_buffer,&len,NULL))
@@ -325,13 +350,13 @@ bool wifi_manager::save_wificonfig() {
 	return ret;
 }
 
-void wifi_manager::onEvent(const char* event,wifi_event_func _call,void* data) {
+void wifi_manager::onEvent(const char* event,wifi_event_func _func,void* data) {
 	
 	wifi_event_call* _call;
 	_call = new wifi_event_call;
 	
 	strcpy(_call->event,event);
-	_call->_func = _call;
+	_call->_func = _func;
 	_call->data = data;
 	
 	_call_list.push_back(_call);
@@ -341,7 +366,7 @@ void* wifi_manager::_wifi_recv_thread(void* data) {
 	wifi_manager* _manager = (wifi_manager*)data;
 	int ret;
 	char buf[256];
-	int len;
+	size_t len;
 	while(_manager->_is_running) {
 		ret = wpa_ctrl_pending(_manager->_event_ctrl);
 		
@@ -350,17 +375,16 @@ void* wifi_manager::_wifi_recv_thread(void* data) {
 			
 			if(!wpa_ctrl_recv(_manager->_event_ctrl,buf,&len)) {
 				buf[len] = 0;
-				list<wifi_event_call*>* pcall = NULL;
-				
-				for(list<wifi_event_call*>* _c = _manager->_call_list->beign();
-					_c != _manager->_call_list->end();_c = _c->next()) {
-					if(strcmp(buf,_c->event) == 0) {
+				list<wifi_event_call*>::node* pcall = NULL;
+				printf("***%s\n",buf);	
+				for(list<wifi_event_call*>::node* _c = _manager->_call_list.begin();_c != _manager->_call_list.end();_c = _c->next) {
+					if(strcmp(buf,_c->element->event) == 0) {
 						pcall = _c;
 					}
 				}
 				
 				if(pcall) {
-					(*pcall->_func)(pcall->data);
+					(*pcall->element->_func)(pcall->element->data);
 				}
 			}
 		}else if(ret == -1)
@@ -371,4 +395,12 @@ void* wifi_manager::_wifi_recv_thread(void* data) {
 	
 	return NULL;
 }	
+
+void wifi_manager::clear() {
+	
+	for(list<wifi_event_call*>::node* _p = _call_list.begin();_p != _call_list.end(); _p = _p->next) {
+		delete _p->element;
+	}
+	_call_list.clear();
+}
 #endif

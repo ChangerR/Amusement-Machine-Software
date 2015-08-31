@@ -1,11 +1,24 @@
 #ifndef __SLCONFIG__H
 #define __SLCONFIG__H
-
+#ifndef byte
 typedef unsigned char byte;
+#endif
+
+#ifndef u32
 typedef unsigned int  u32;
+#endif
+
+#ifndef s32
 typedef int s32;
+#endif
+
+#ifndef u8
 typedef unsigned char u8;
+#endif
+
+#ifndef s8
 typedef char s8;
+#endif
 
 #ifdef _WIN32
 #define SLSERVER_WIN32

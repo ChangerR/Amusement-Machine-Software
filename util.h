@@ -90,7 +90,7 @@ inline float parse_float(const char* p) {
 }
 
 
-inline char* sl_find_first_char(const char* p,char c) {
+inline const char* sl_find_first_char(const char* p,char c) {
 	while(*p) {
 		if(*p == c)
 			break;
@@ -99,5 +99,60 @@ inline char* sl_find_first_char(const char* p,char c) {
 	return p;
 }
 
+inline char* sl_find_first_char(char* p,char c) {
+	while(*p) {
+		if(*p == c)
+			break;
+		p++;
+	}
+	return p;
+}
+
+inline int sl_hex2num(char c)
+{
+	if (c >= '0' && c <= '9')
+		return c - '0';
+	if (c >= 'a' && c <= 'f')
+		return c - 'a' + 10;
+	if (c >= 'A' && c <= 'F')
+		return c - 'A' + 10;
+	return -1;
+}
+
+
+inline int sl_hex2byte(const char *hex)
+{
+	int a, b;
+	a = sl_hex2num(*hex++);
+	if (a < 0)
+		return -1;
+	b = sl_hex2num(*hex++);
+	if (b < 0)
+		return -1;
+	return (a << 4) | b;
+}
+
+#define ETH_ALEN 6
+inline const char * sl_hwaddr_parse(const char *txt, unsigned char *addr)
+{
+	size_t i;
+
+	for (i = 0; i < ETH_ALEN; i++) {
+		int a;
+
+		a = sl_hex2byte(txt);
+		if (a < 0)
+			return NULL;
+		txt += 2;
+		addr[i] = a&0xff;
+		if (i < ETH_ALEN - 1 && *txt++ != ':')
+			return NULL;
+	}
+	return txt;
+}
+
+inline int sl_hwaddr_aton(const char *txt,unsigned char* addr) {
+	return sl_hwaddr_parse(txt, addr) ? 0 : -1;
+}
 
 #endif

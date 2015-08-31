@@ -1,7 +1,8 @@
 #include <unistd.h>
 #include "wpa_ctrl.h"
 #include <stdio.h>
-
+#include <string.h>
+#define MSG "LIST_NETWORKS"
 int main(int args,char** argv ) {
 	struct wpa_ctrl* _ctrl;
 	char reply[1024] = {0};
@@ -13,19 +14,19 @@ int main(int args,char** argv ) {
 		return 1;
 	}
 	
-	if(wpa_ctrl_request(_ctrl,"SCAN",4,reply,&reply_len,NULL)) {
+	if(wpa_ctrl_request(_ctrl,MSG,strlen(MSG),reply,&reply_len,NULL)) {
 		wpa_ctrl_close(_ctrl);
 		return 1;
 	}
-	printf("scan %s\n",reply);
-	
+	printf("%s\n",reply);
+/*	
 	reply_len = 1024;
 	if(wpa_ctrl_request(_ctrl,"SCAN_RESULTS",12,reply,&reply_len,NULL)) {
 		wpa_ctrl_close(_ctrl);
 		return 1;
 	}
 	printf("scan_results %s\n",reply);
-
+*/
 	wpa_ctrl_close(_ctrl);
 	return 0;
 }
