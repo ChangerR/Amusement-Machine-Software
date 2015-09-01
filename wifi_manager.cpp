@@ -376,15 +376,15 @@ void* wifi_manager::_wifi_recv_thread(void* data) {
 			if(!wpa_ctrl_recv(_manager->_event_ctrl,buf,&len)) {
 				buf[len] = 0;
 				list<wifi_event_call*>::node* pcall = NULL;
-				printf("***%s\n",buf);	
+				//printf("***%s\n",buf);	
 				for(list<wifi_event_call*>::node* _c = _manager->_call_list.begin();_c != _manager->_call_list.end();_c = _c->next) {
-					if(strcmp(buf,_c->element->event) == 0) {
+					if(strncmp(buf+3,_c->element->event,strlen(_c->element->event)) == 0) {
 						pcall = _c;
 					}
 				}
 				
 				if(pcall) {
-					(*pcall->element->_func)(pcall->element->data);
+					(*pcall->element->_func)(buf[1] - '0',buf + 3 + strlen(pcall->element->event),pcall->element->data);
 				}
 			}
 		}else if(ret == -1)

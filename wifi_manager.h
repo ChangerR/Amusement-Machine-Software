@@ -31,7 +31,7 @@ struct wifi_list {
 	int flag;
 };
 
-typedef void (*wifi_event_func)(void*);
+typedef void (*wifi_event_func)(int,const char*,void*);
 
 class wifi_manager {
 	

@@ -22,6 +22,11 @@ void print_wifilist(wifi_list* _list) {
 	printf("flag:%d\n",_list->flag);
 }
 
+void connected_wifi(int a,const char* p,void* d) {
+	printf("!!!log level:%d\n",a);
+	printf("!!!log:%s\n",p);
+}
+
 int main(int args,char** argv) {
 	wifi_manager* _wifi = new wifi_manager;
 	do {
@@ -29,6 +34,7 @@ int main(int args,char** argv) {
 			printf("Open wifi interface error\n");
 			break;
 		}
+		_wifi->onEvent(WPA_EVENT_CONNECTED,connected_wifi,NULL);
 
 		wifi_status _status = {0};
 
@@ -54,12 +60,12 @@ int main(int args,char** argv) {
 			delete _p->element;
 		}
 
-		if(_wifi->addWifiNetwork("511","12345678") == false) {
+		if(_wifi->addWifiNetwork("gopro12345","12345678") == false) {
 			printf("addWifiNetwork failed\n");
 			break;
 		}
 
-		if(_wifi->connectWifi("511") == false) {
+		if(_wifi->connectWifi("gopro12345") == false) {
 			printf("connectWifi failed\n");
 			break;
 		}
