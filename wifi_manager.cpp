@@ -204,7 +204,10 @@ bool wifi_manager::connectWifi(const char* ssid) {
 		}
 		
 		if(_wifi) {
-			ret = connectWifi(_wifi->id);
+			if(_wifi->flag == 1)
+				ret = true;
+			else
+				ret = connectWifi(_wifi->id);
 		}
 
 		clearWifiList(&_configList);
@@ -352,14 +355,25 @@ bool wifi_manager::save_wificonfig() {
 
 void wifi_manager::onEvent(const char* event,wifi_event_func _func,void* data) {
 	
-	wifi_event_call* _call;
-	_call = new wifi_event_call;
+	wifi_event_call* _call = NULL;
 	
-	strcpy(_call->event,event);
-	_call->_func = _func;
-	_call->data = data;
+	for(list<wifi_event_call*>::node* t_p = _call_list.begin();t_p != _call_list.end();t_p = t_p->next) {
+		if(!strcmp(t_p->element->event,event))
+			_call = t_p->element;
+	}
 	
-	_call_list.push_back(_call);
+	if(_call) {
+		_call->_func = _func;
+		_call->data = data;
+	}else {
+		_call = new wifi_event_call;
+		
+		strcpy(_call->event,event);
+		_call->_func = _func;
+		_call->data = data;
+		
+		_call_list.push_back(_call);
+	}
 }
 
 void* wifi_manager::_wifi_recv_thread(void* data) {

@@ -5,9 +5,10 @@
 #include "list.h"
 #include "HttpUrlConnection.h"
 #ifdef __linux__
-#include<sys/types.h>  
-#include<sys/socket.h>  
-#include<netinet/in.h>
+#include <sys/types.h>  
+#include <sys/socket.h>  
+#include <netinet/in.h>
+#include "wifi_manager.h"
 #endif
 
 #define GOPRO4_UDP_PORT 8554
@@ -23,7 +24,14 @@ public:
 	virtual ~gopro4();
 	
 	bool init();
+	
 	bool start();
+	
+#ifdef SLSERVER_LINUX
+	bool start2();
+	static void onWifiConnected(int level,const char* msg,void* data);
+	static void onWifiDisconnected(int level,const char* msg,void* data);
+#endif
 	void stop();
 	
 	int addClient(int uid,const char* p);
@@ -70,6 +78,13 @@ private:
 	char* _recv_buffer;
 	HttpUrlConnection _conn;
 	static int ffmpeg_init;
+#ifdef SLSERVER_LINUX
+	wifi_manager* _wifi;
+	bool _isWifiConnect;
+	char _ssid[128];
+	char _psk[128];
+	char _wifi_ctrl_iface[128];
+#endif	
 };
 
 #endif

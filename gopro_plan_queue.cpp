@@ -90,7 +90,11 @@ void* GoproPlanQueue::_run_queue(void*  user) {
 			else if (pointer->_gopro4->test_is_work())
 			{
 				if (strcmp(cp, "start") == 0) {
+#ifdef SLSERVER_LINUX
+					pointer->_gopro4->start2();	
+#else
 					pointer->_gopro4->start();
+#endif
 					LOGOUT("***INFO*** gopro start\n");
 				}
 				else if (strcmp(cp, "stop") == 0) {

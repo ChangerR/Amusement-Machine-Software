@@ -25,6 +25,7 @@ extern "C"
 };
 
 #define MAX_BUFFER_LEN 4096
+#include <stdlib.h>
 
 struct gopro4_control {
 	const char* method;
@@ -146,6 +147,7 @@ gopro4::gopro4(int trans_t):_conn(4096,16){
 	_heartbeat_sender = INVALID_SOCKET; 
 	_recv_buffer = new char[MAX_BUFFER_LEN];
 	_trans_type = trans_t;
+	_wifi = NULL;
 	if (ffmpeg_init <= 0)
 	{
 		av_register_all();
@@ -214,8 +216,92 @@ bool gopro4::init() {
 	_is_start = false;
 	_is_working = false;
 
+#ifdef SLSERVER_LINUX
+	if(!slglobal.pConfig->getString("GOPRO_SSID",_ssid))
+		strcpy(_ssid,"gopro12345");
+	
+	if(!slglobal.pConfig->getString("GOPRO_PSK",_psk))
+		strcpy(_psk,"12345678");
+
+	if(!slglobal.pConfig->getString("WPA_CTRL_IFACE",_wifi_ctrl_iface))
+		strcpy(_wifi_ctrl_iface,"/var/run/wpa_supplicant/wlan0");
+	
+	_wifi = new wifi_manager;
+	
+	if(_wifi->init(_wifi_ctrl_iface) == false) {
+		LOGOUT("***ERROR*** cannot open wifi ctrl iface,please sure you run with sudo\n");
+		
+		delete _wifi;
+		_wifi = NULL;
+		
+		return false;
+	}
+	_isWifiConnect = false;
+#endif	
+	
 	return true;
 }
+
+#ifdef SLSERVER_LINUX
+bool gopro4::start2() {
+	wifi_status t_status;
+	bool ret = false;
+	memset(&t_status,0,sizeof(wifi_status));
+	
+	do {
+		if(_wifi == NULL)
+			break;
+		
+		if(_wifi->getWifiStatus(&t_status) == false) {
+			LOGOUT("***ERROR*** wifi interface get wifi status failed\n");
+			break;
+		}
+		
+		if(strcmp(t_status.ssid,_ssid) == 0) {
+			ret = true;
+			_isWifiConnect = true;
+			this->start();
+		}else{
+			_wifi->onEvent(WPA_EVENT_CONNECTED,gopro4::onWifiConnected,this);
+			_wifi->onEvent(WPA_EVENT_DISCONNECTED,gopro4::onWifiDisconnected,this);
+			
+			if(_wifi->connectWifi(_ssid) == false) {
+				LOGOUT("***INFO*** cannot connect wifi,try to set\n");
+				if(_wifi->addWifiNetwork(_ssid,_psk) == false)
+					break;
+				ret = _wifi->connectWifi(_ssid);
+			}else
+				ret = true;
+		}
+	}while(0);	
+	
+	return ret;
+}
+
+void gopro4::onWifiConnected(int level,const char* msg,void* data) {
+	gopro4* _gopro4 = (gopro4*)data;
+	wifi_status t_status;
+	memset(&t_status,0,sizeof(wifi_status));
+	
+	if(_gopro4->_wifi->getWifiStatus(&t_status) == false) {
+		LOGOUT("***ERROR*** wifi interface get wifi status failed\n");
+		return;
+	}
+	
+	if(strcmp(t_status.ssid,_gopro4->_ssid) == 0) {
+		system("dhclient wlan0");
+		_gopro4->_isWifiConnect = true;
+		_gopro4->start();
+	}
+}
+
+void gopro4::onWifiDisconnected(int level,const char* msg,void* data) {
+	gopro4* _gopro4 = (gopro4*)data;
+	LOGOUT("***ERROR*** wifi disconnect\n");
+	
+	_gopro4->_isWifiConnect = false;
+}
+#endif
 
 #ifdef SLSERVER_WIN32
 int gettimeofday(struct timeval *tp, void *tzp);
