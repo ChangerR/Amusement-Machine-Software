@@ -289,7 +289,15 @@ void gopro4::onWifiConnected(int level,const char* msg,void* data) {
 	}
 	
 	if(strcmp(t_status.ssid,_gopro4->_ssid) == 0) {
-		system("dhclient wlan0");
+		char buf[32];
+		char buf2[64];
+		
+		get_file_from_path(_gopro4->_wifi_ctrl_iface,buf);
+		
+		sprintf(buf2,"dhclient %s",buf);
+		
+		LOGOUT("***INFO*** %s\n",buf2);
+		system(buf2);
 		_gopro4->_isWifiConnect = true;
 		_gopro4->start();
 	}
@@ -636,11 +644,12 @@ void gopro4::removeClient(int uid) {
 }
 
 bool gopro4::gopro_wol(const char* ip, unsigned short port) {
-	unsigned char _mac[6];
+	unsigned char _mac[6] = {0};
 	SOCKET sock = INVALID_SOCKET;
 
 	LOGOUT("***INFO*** gopro_wol\n");
 
+/*
 	if (_init_mac) {
 		memcpy(_mac, _smac, 6);
 	}
@@ -648,7 +657,22 @@ bool gopro4::gopro_wol(const char* ip, unsigned short port) {
 		if (SlServer::getMacAddr(ip, _mac) == false)
 			return false;
 	}
-
+*/
+#ifdef SLSERVER_WIN32
+	if (SlServer::getMacAddr(ip, _mac) == false) {
+		return false;
+	}
+#else
+	wifi_status t_status;
+	memset(&t_status,0,sizeof(wifi_status));
+	
+	if(_wifi->getWifiStatus(&t_status) == false) {
+		LOGOUT("***ERROR*** wifi interface get wifi status failed at gopro_wol\n");
+		return false;
+	}
+	
+	memcpy(_mac,t_status.bssid,6);
+#endif
 	sock = socket(AF_INET, SOCK_DGRAM, 0);
 	if (sock == INVALID_SOCKET)
 	{
@@ -656,7 +680,6 @@ bool gopro4::gopro_wol(const char* ip, unsigned short port) {
 		return false;
 	}
 
-	//设置为广播发送
 	int bOptVal = 1;
 	int iOptLen = sizeof(int);
 	if (setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (char*)&bOptVal, iOptLen) == SOCKET_ERROR)
@@ -679,7 +702,7 @@ bool gopro4::gopro_wol(const char* ip, unsigned short port) {
 	memcpy(magicpacket + 18, _mac + 6, 12);
 	memcpy(magicpacket + 30, _mac + 6, 24);
 	memcpy(magicpacket + 54, _mac + 6, 48);
-	//发送Magic Packet
+
 	if (sendto(sock, (const char *)magicpacket, 102, 0, (const struct sockaddr *)&to, sizeof(to)) == SOCKET_ERROR) {
 		printf("Magic packet send error: %d", errno);
 	}
@@ -693,9 +716,13 @@ bool gopro4::gopro_wol(const char* ip, unsigned short port) {
 bool gopro4::test_is_work()
 {
 	struct sockaddr_in _sockaddr;
-	SOCKET _sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	
+#ifdef SLSERVER_LINUX
+	if(_isWifiConnect == false)
+		return false;
+#endif
 
- 
+	SOCKET _sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (_sock == INVALID_SOCKET) {
 		LOGOUT("***ERROR*** can not open socket\n");
 		return false;
@@ -747,9 +774,11 @@ bool gopro4::test_is_work()
 #endif
 }
 
+#if 0
 bool gopro4::_init_mac = false;
 
 unsigned char gopro4::_smac[6];
+#endif
 
 gopro4::Client::Client() {
 	uid = -1;

@@ -121,7 +121,7 @@ bool SlServer::init(const char* p) {
 
 	LOGOUT("***INFO*** Now We Listen at port %d\n", port);
 
-	gopro4::_init_mac = _config->getMacAddress("GOPRO_MAC", gopro4::_smac);
+	//gopro4::_init_mac = _config->getMacAddress("GOPRO_MAC", gopro4::_smac);
 
 	if(_config->getString("WWW-FOLDER",SlClient::www_folder) == false)
 		SlClient::www_folder[0];

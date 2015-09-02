@@ -45,8 +45,11 @@ public:
 	
 	bool test_is_work();
 
+#if 0
 	static bool _init_mac;
 	static unsigned char _smac[];
+#endif
+
 private:
 	SOCKADDR_IN _heartbeat_addr;
 	int _heart_len;

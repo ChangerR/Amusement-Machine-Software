@@ -155,4 +155,26 @@ inline int sl_hwaddr_aton(const char *txt,unsigned char* addr) {
 	return sl_hwaddr_parse(txt, addr) ? 0 : -1;
 }
 
+inline char* get_file_from_path(const char* path,char* buf) {
+	char* p1,p2;
+	p2 = buf;
+	p1 = path;
+	while(*p1)p1++;
+	
+	while(p1 >= path) {
+		if(*p1 == '/')
+			break;
+		p1--;
+	}
+	
+	if(*p1 == '/')
+		p1++;
+	
+	while(*p1) {
+		*p2++ = *p1++;
+	}
+	*p2 = 0;
+	return buf;
+}
+
 #endif
