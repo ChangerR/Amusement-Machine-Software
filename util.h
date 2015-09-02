@@ -156,7 +156,9 @@ inline int sl_hwaddr_aton(const char *txt,unsigned char* addr) {
 }
 
 inline char* get_file_from_path(const char* path,char* buf) {
-	char* p1,p2;
+	const char* p1;
+	char* p2;
+
 	p2 = buf;
 	p1 = path;
 	while(*p1)p1++;

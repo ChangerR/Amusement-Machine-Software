@@ -141,7 +141,7 @@ bool wifi_manager::getAvaiableWifi(list<wifi_scan*> *_list) {
 				char _buf[256];
 				char *p1 = p_start,*p2 = _buf;
 				
-				while(*p1 != '\t')
+				while(*p1&&*p1 != '\t')
 					*p2++ = *p1++;
 				
 				*p2 = 0;
@@ -150,7 +150,7 @@ bool wifi_manager::getAvaiableWifi(list<wifi_scan*> *_list) {
 				sl_hwaddr_aton(_buf,_scan->bssid);
 				
 				p2 = _buf;
-				while(*p1 != '\t')
+				while(*p1&&*p1 != '\t')
 					*p2++ = *p1++;
 				
 				*p2 = 0;
@@ -159,7 +159,7 @@ bool wifi_manager::getAvaiableWifi(list<wifi_scan*> *_list) {
 				_scan->frequency = parse_int_dec(_buf);
 				
 				p2 = _buf;
-				while(*p1 != '\t')
+				while(*p1&&*p1 != '\t')
 					*p2++ = *p1++;
 				
 				*p2 = 0;
@@ -167,7 +167,7 @@ bool wifi_manager::getAvaiableWifi(list<wifi_scan*> *_list) {
 				_scan->signal_level = parse_int_dec(_buf);
 				
 				p2 = _buf;
-				while(*p1 != '\t')
+				while(*p1&&*p1 != '\t')
 					*p2++ = *p1++;
 				
 				*p2 = 0;
@@ -258,7 +258,7 @@ bool wifi_manager::listConfigedWifi(list<wifi_list*> *_list) {
 				char _buf[256];
 				char *p1 = p_start,*p2 = _buf;
 				
-				while(*p1 != '\t')
+				while(*p1&&*p1 != '\t')
 					*p2++ = *p1++;
 				
 				*p2 = 0;
@@ -267,7 +267,7 @@ bool wifi_manager::listConfigedWifi(list<wifi_list*> *_list) {
 				_wifi_list->id = parse_int_dec(_buf);
 				
 				p2 = _buf;
-				while(*p1 != '\t')
+				while(*p1&&*p1 != '\t')
 					*p2++ = *p1++;
 				
 				*p2 = 0;
@@ -275,11 +275,11 @@ bool wifi_manager::listConfigedWifi(list<wifi_list*> *_list) {
 				
 				strncpy(_wifi_list->ssid,_buf,128);
 				
-				while(*p1 != '\t')p1++;				
+				while(*p1&&*p1 != '\t')p1++;				
 				p1++;
 				
 				p2 = _buf;
-				while(*p1 != '\t')
+				while(*p1&&*p1 != '\t')
 					*p2++ = *p1++;
 				
 				*p2 = 0;

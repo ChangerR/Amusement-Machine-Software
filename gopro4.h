@@ -40,7 +40,7 @@ public:
 	
 	static void* heartbeat(void *);
 	static void* transfer(void*);
-	static bool gopro_wol(const char* ip, unsigned short port);
+	bool gopro_wol(const char* ip, unsigned short port);
 	static void* transfer_stream(void* data);
 	
 	bool test_is_work();

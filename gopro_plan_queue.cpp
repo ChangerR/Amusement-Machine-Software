@@ -86,24 +86,21 @@ void* GoproPlanQueue::_run_queue(void*  user) {
 
 				pointer->_gopro4->gopro_wol(GOPRO4_IP, GOPRO4_WOL);
 
+			}else if (strcmp(cp, "start") == 0) {
+#ifdef SLSERVER_LINUX
+				pointer->_gopro4->start2();	
+#else
+				pointer->_gopro4->start();
+#endif
+				LOGOUT("***INFO*** gopro start\n");
+			}
+			else if (strcmp(cp, "stop") == 0) {
+				LOGOUT("***INFO*** gopro stop\n");
+				pointer->_gopro4->stop();
 			}
 			else if (pointer->_gopro4->test_is_work())
 			{
-				if (strcmp(cp, "start") == 0) {
-#ifdef SLSERVER_LINUX
-					pointer->_gopro4->start2();	
-#else
-					pointer->_gopro4->start();
-#endif
-					LOGOUT("***INFO*** gopro start\n");
-				}
-				else if (strcmp(cp, "stop") == 0) {
-					LOGOUT("***INFO*** gopro stop\n");
-					pointer->_gopro4->stop();
-				}
-				else{
-					pointer->_gopro4->runCommand(cp);
-				}
+				pointer->_gopro4->runCommand(cp);
 			}
 			delete plan;
 		}
