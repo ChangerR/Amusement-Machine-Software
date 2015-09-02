@@ -18,6 +18,9 @@
 
 #define GOPRO4_TRANSFER_PORT 1
 #define GOPRO4_TRANSFER_STREAM 2
+
+typedef void (*video_handler)(void*);
+
 class gopro4 {
 public:
 	gopro4(int trans_t = GOPRO4_TRANSFER_STREAM);
@@ -44,7 +47,9 @@ public:
 	static void* transfer_stream(void* data);
 	
 	bool test_is_work();
-
+	
+	void setVideoOn(video_handler _f,void* data);
+	void setVideoOff(video_handler _f,void* data);
 #if 0
 	static bool _init_mac;
 	static unsigned char _smac[];
@@ -88,6 +93,10 @@ private:
 	char _psk[128];
 	char _wifi_ctrl_iface[128];
 #endif	
+	video_handler _vd_on_func;
+	void* _vd_on_data;
+	video_handler _vd_off_func;
+	void* _vd_off_data;
 };
 
 #endif

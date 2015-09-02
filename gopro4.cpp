@@ -154,6 +154,10 @@ gopro4::gopro4(int trans_t):_conn(4096,16){
 		avformat_network_init();
 		ffmpeg_init ++ ;
 	}
+	_vd_on_func = NULL;
+	_vd_on_data = NULL;
+	_vd_off_func = NULL;
+	_vd_off_data = NULL;
 }
 
 gopro4::~gopro4() {
@@ -397,6 +401,9 @@ void* gopro4::transfer_stream(void* data) {
 		LOGOUT("***ERROR*** Couldn't open input stream.\n");
 		return NULL;
 	}
+	
+	if(pointer->_vd_on_func != NULL)
+		(*pointer->_vd_on_func)(_vd_on_data);
 	
 	if (avformat_find_stream_info(pFormatCtx, NULL) < 0)
 	{
@@ -794,4 +801,14 @@ gopro4::Client::Client(int u,const char* ip) {
 #else
 	sock.sin_addr.s_addr = inet_addr(ip);
 #endif
+}
+
+void gopro4::setVideoOn(video_handler _f,void* data) {
+	_vd_on_func = _f;
+	_vd_on_data = data;
+}
+
+void gopro4::setVideoOff(video_handler _f,void* data) {
+	_vd_off_func = _f;
+	_vd_off_data = data;
 }

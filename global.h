@@ -20,6 +20,9 @@ struct SlGlobal {
 	int frame_alloc_size;
 	long frame_count;
 	ServerConfig* pConfig;
+#ifdef SLSERVER_LINUX
+	bool global_running;
+#endif
 };
 
 extern SlGlobal slglobal;

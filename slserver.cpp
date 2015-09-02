@@ -126,6 +126,8 @@ bool SlServer::init(const char* p) {
 	if(_config->getString("WWW-FOLDER",SlClient::www_folder) == false)
 		SlClient::www_folder[0];
 	
+	_planqueue->_gopro4->setVideoOn(SlServer::onVideoOn,this);
+	_planqueue->_gopro4->setVideoOff(SlServer::onVideoOff,this);
 	return true;
 }
 
@@ -454,6 +456,16 @@ bool SlServer::getMacAddr(const char* ip, unsigned char* mac) {
 }
 #endif
 
+void SlServer::onVideoOn(void* data) {
+	SlServer* pointer = (SlServer*)data;
+	pointer->broadcast(9,"stream_on");
+}
+
+void SlServer::onVideoOff(void* data) {
+	SlServer* pointer = (SlServer*)data;
+	pointer->broadcast(9,"stream_off");
+}
+	
 #ifdef SLSERVER_WIN32
 int SlServer::socket_init = 0;
 

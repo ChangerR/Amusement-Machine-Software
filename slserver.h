@@ -24,6 +24,9 @@ public:
 	static void* __cdecl watcher(void* data);
 
 	static bool getMacAddr(const char* ip, unsigned char* mac);
+	
+	static void onVideoOn(void*);
+	static void onVideoOff(void*);
 public:
 	ServerConfig* _config;
 private:

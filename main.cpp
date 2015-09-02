@@ -49,6 +49,13 @@ void Usage() {
 	LOGOUT("Usage: slserver -p [port] -s [com] -f [config file]\n");
 }
 
+#ifdef SLSERVER_LINUX
+void signal_handler(int sig) {
+	printf("now we get signal Ctrl-C to stop\n");
+	slglobal.global_running = false;
+}
+#endif
+
 int main(int args,char** argv) {
 	int ch = 0;
 	int port = 0;
@@ -56,7 +63,12 @@ int main(int args,char** argv) {
 	char filename[256] = {0};
 	ServerConfig* pConfig = NULL;
 	SlServer* pserver = NULL;
+	
 #ifdef SLSERVER_LINUX
+	if(signal(SIGINT, signal_handler) == SIG_ERR) {
+        printf("could not register signal handler\n");
+        exit(1);
+    }
 	pthread_mutex_init(&slglobal.frame_lock,NULL);
 #else
 	INIT_GLOBAL_FRAME_LOCK;
@@ -66,6 +78,8 @@ int main(int args,char** argv) {
 	slglobal.frame_size = 0;
 	slglobal.frame_alloc_size = 0;
 	slglobal.frame_count = 1;
+	
+	
 	
 	while((ch = getopt(args,argv,"p:s:f:")) != -1) {
 		
@@ -122,9 +136,16 @@ int main(int args,char** argv) {
 		goto end;
 	}
 
+#ifdef SLSERVER_WIN32
 	LOGOUT("***INFO*** Please Input A Char To Stop This Server\n");
 	getc(stdin);
+#else
+	slglobal.global_running = true;
 
+	while(slglobal.global_running) {
+		usleep(10);
+	}
+#endif
 	pserver->stop();
 	if (pserver)
 		delete pserver;
