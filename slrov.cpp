@@ -34,6 +34,8 @@ slrov::slrov(SlServer* pointer) {
 	server = pointer;
 	thr = yaw = lift = 0;
 	port = starboard = vertical_left = vertical_right = MIDPOINT;
+	
+	pilot = new Pilot(this);
 }
 
 slrov::~slrov() {
@@ -81,6 +83,7 @@ void slrov::setMpuEular(float _x,float _y,float _z) {
 
 	sprintf_s(tmp,"hdgd=%.2f,roll=%.2f,pitch=%.2f,yaw=%.2f",mpu_campass,mpu_roll,mpu_pitch,mpu_yaw);
 	server->broadcast(7,tmp);
+	//printf("***INFO*** %s\n", tmp);
 }
 
 void slrov::setMs5803_data(float temp,float press) {
@@ -91,6 +94,7 @@ void slrov::setMs5803_data(float temp,float press) {
 	
 	sprintf_s(tmp,"temp=%.2f,depth=%.2f",temp,depth);
 	server->broadcast(7,tmp);
+	//printf("***INFO*** %s\n", tmp);
 }
 	
 bool slrov::start(const char* s) {
@@ -295,8 +299,7 @@ void* slrov::pid(void* user) {
 		}
 ////////////////////////////////////////////
 //this area you can do your pid thing
-
-
+		pointer->pilot->pilotdo(&_port,&_starboard,&_vertical_left,&_vertical_right);
 //////////////////////////////////////////
 		if(_port != pointer->port || _starboard != pointer->starboard || pointer->vertical_left != _vertical_left
 					||pointer->vertical_right != _vertical_right) {

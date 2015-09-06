@@ -11,10 +11,14 @@
 #include <string.h>
 #include <errno.h>
 #include "global.h"
+
+#ifdef SLSERVER_LINUX
 #ifndef INT64_C
 #define INT64_C
 #define UINT64_C
 #endif
+#endif
+
 extern "C"
 {
 #include <libavcodec/avcodec.h>
@@ -147,7 +151,9 @@ gopro4::gopro4(int trans_t):_conn(4096,16){
 	_heartbeat_sender = INVALID_SOCKET; 
 	_recv_buffer = new char[MAX_BUFFER_LEN];
 	_trans_type = trans_t;
+#ifdef SLSERVER_LINUX
 	_wifi = NULL;
+#endif
 	if (ffmpeg_init <= 0)
 	{
 		av_register_all();
@@ -401,9 +407,9 @@ void* gopro4::transfer_stream(void* data) {
 		LOGOUT("***ERROR*** Couldn't open input stream.\n");
 		return NULL;
 	}
-	
+
 	if(pointer->_vd_on_func != NULL)
-		(*pointer->_vd_on_func)(_vd_on_data);
+		(*pointer->_vd_on_func)(pointer->_vd_on_data);
 	
 	if (avformat_find_stream_info(pFormatCtx, NULL) < 0)
 	{

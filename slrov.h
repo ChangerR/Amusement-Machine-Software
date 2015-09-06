@@ -2,6 +2,7 @@
 #define __SL_SLROV_H
 #include "hardware.h"
 #include <pthread.h>
+#include "pilot.h"
 #define MAX_CLIENT_CMD_LEN 256
 #define MAX_CLIENT_ARGS 16
 
@@ -19,6 +20,7 @@
 #define POWER_INDEX(a) ((a)*4)
 
 class SlServer;
+
 class slrov {
 public:
 	slrov(SlServer* pointer);
@@ -47,6 +49,7 @@ public:
 private:
 	hardware* rov;
 	SlServer* server;
+	Pilot* pilot;
 	pthread_t _thread;
 	bool running;
 	char cmd[MAX_CLIENT_CMD_LEN];
@@ -62,6 +65,8 @@ private:
 	int _power_delta[24];
 	int _yaws_stable[6];
 	float _scale_fact[8];
+	
+	friend class Pilot;
 };
 
 #endif

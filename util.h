@@ -179,4 +179,13 @@ inline char* get_file_from_path(const char* path,char* buf) {
 	return buf;
 }
 
+inline int sl_constrain(int a,int _max,int _min) {
+	a = a > _max ? _max : a;
+	a = a < _min ? _min : a;
+	return a;
+}
+
+inline int sl_abs(int a) {
+	return a < 0 ? -a : a;
+}
 #endif

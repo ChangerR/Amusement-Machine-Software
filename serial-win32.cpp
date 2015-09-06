@@ -180,7 +180,7 @@ int Serial::read() {
 	}
 	//((OVERLAPPED*)overlapped_read)->
 	_wpos += (nRead == 0 ? nlen : nRead);
-	printf("read serial data len:%d\n", _wpos);
+	//printf("read serial data len:%d\n", _wpos);
 	//Sleep(1);
 	return _wpos;
 }

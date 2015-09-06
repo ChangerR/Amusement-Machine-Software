@@ -103,6 +103,7 @@ copy $(SolutionDir)..\slserver_win32.config $(OutDir)\slserver.config</Command>
     <ClInclude Include="..\..\HttpStream.h" />
     <ClInclude Include="..\..\HttpUrlConnection.h" />
     <ClInclude Include="..\..\list.h" />
+    <ClInclude Include="..\..\pilot.h" />
     <ClInclude Include="..\..\serial.h" />
     <ClInclude Include="..\..\ServerConfig.h" />
     <ClInclude Include="..\..\slclient.h" />
@@ -119,6 +120,7 @@ copy $(SolutionDir)..\slserver_win32.config $(OutDir)\slserver.config</Command>
     <ClCompile Include="..\..\HttpStream.cpp" />
     <ClCompile Include="..\..\HttpUrlConnection.cpp" />
     <ClCompile Include="..\..\main.cpp" />
+    <ClCompile Include="..\..\pilot.cpp" />
     <ClCompile Include="..\..\serial-win32.cpp" />
     <ClCompile Include="..\..\ServerConfig.cpp" />
     <ClCompile Include="..\..\slclient.cpp" />

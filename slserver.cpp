@@ -311,6 +311,9 @@ void* SlServer::recv_data(void* data) {
 								else
 									pointer->_planqueue->addPlan(cp + 4);
 								break;
+							case 'x':
+								pointer->broadcast(cp[4] - '0', cp + 5);
+								break;
 							default:
 								break;
 						}
@@ -352,7 +355,7 @@ void SlServer::broadcast(int channel,const char* p) {
 	pthread_mutex_lock(&_clients_write_mutex);
 //	LOGOUT("***DEBBUG*** BROADCAST\n");
 	for(list<SlClient*>::node * pn = clients.begin(); pn != clients.end();pn = pn->next) {
-		if(pn->element->client_state == CLIENT_CREATING)
+		if(pn->element->client_state == CLIENT_WORKING)
 			pn->element->write(b_buf,len);
 		//LOGOUT("***INFO*** write:%d cmd:%s", pn->element->uid, b_buf);
 	}
@@ -368,7 +371,7 @@ void SlServer::send(int id,int channel,const char* ps) {
 	len = strlen(b_buf);
 	
 	for(list<SlClient*>::node * p = clients.begin(); p != clients.end();p = p->next) {
-		if(p->element->uid == id&&p->element->client_state == CLIENT_CREATING) {
+		if(p->element->uid == id&&p->element->client_state == CLIENT_WORKING) {
 			pthread_mutex_lock(&_clients_write_mutex);
 			if (p->element->write(b_buf, len) == -1) {
 				LOGOUT("***ERR***: Send UID:%d error", id);
@@ -458,12 +461,13 @@ bool SlServer::getMacAddr(const char* ip, unsigned char* mac) {
 
 void SlServer::onVideoOn(void* data) {
 	SlServer* pointer = (SlServer*)data;
-	pointer->broadcast(9,"stream_on");
+
+	pointer->broadcast(9, "{\"name\":\"stream_on\",\"args\":[]}");
 }
 
 void SlServer::onVideoOff(void* data) {
 	SlServer* pointer = (SlServer*)data;
-	pointer->broadcast(9,"stream_off");
+	pointer->broadcast(9, "{\"name\":\"stream_off\",\"args\":[]}");
 }
 	
 #ifdef SLSERVER_WIN32

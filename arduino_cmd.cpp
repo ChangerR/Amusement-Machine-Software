@@ -90,7 +90,9 @@ void arduino_cmd::parse_command(const char* p) {
 		p++;
 	}
 };
-int times = 0;
+
+//int times = 0;
+
 int arduino_cmd::add_command(const char* str,ino_execute exec,void* user) {
 	if(cmd_count < MAX_INOCMD) {
 		strcpy_s(inocmd[cmd_count].cmd,str);
@@ -105,6 +107,7 @@ int arduino_cmd::execute() {
 	
 	ino_command* ino = NULL;
 	int ret = -1;
+	/*
 	printf("times %d function:%s\n", times++, cmd );
 	for (int i = 0; i < args; i++) {
 		printf("argv %d:%s\n",i,argv[i]);
@@ -113,7 +116,7 @@ int arduino_cmd::execute() {
 			printf("2000\n");
 		}
 	}
-	
+	*/
 	for(int i = 0; i < cmd_count;i++) {
 		if(!strcmp(cmd,inocmd[i].cmd)) {
 			ino = &inocmd[i];

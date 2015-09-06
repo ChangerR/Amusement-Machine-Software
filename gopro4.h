@@ -93,6 +93,7 @@ private:
 	char _psk[128];
 	char _wifi_ctrl_iface[128];
 #endif	
+
 	video_handler _vd_on_func;
 	void* _vd_on_data;
 	video_handler _vd_off_func;
