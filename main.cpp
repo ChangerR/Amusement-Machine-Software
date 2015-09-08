@@ -11,6 +11,8 @@
 #include "gopro4.h"
 #ifdef SLSERVER_LINUX
 #include <unistd.h>
+#include <signal.h>
+
 int getopt(int argc, char * const argv[], const char *optstring);
 
 extern char *optarg;
@@ -124,7 +126,8 @@ int main(int args,char** argv) {
 		LOGOUT("***ERROR*** Cannot define serial port\n");
 		goto end;
 	}
-
+	
+	LOGOUT("***INFO*** now we start server\n");
 	
 	pserver = new SlServer(port,pConfig);
 	slglobal.pConfig = pConfig;
@@ -136,7 +139,8 @@ int main(int args,char** argv) {
 	if (pserver->start() == false) {
 		goto end;
 	}
-	
+
+	LOGOUT("***INFO*** server start ok\n");
 	slglobal.server = pserver;
 	
 #ifdef SLSERVER_WIN32
@@ -149,6 +153,7 @@ int main(int args,char** argv) {
 		usleep(10);
 	}
 #endif
+
 	pserver->stop();
 	if (pserver)
 		delete pserver;

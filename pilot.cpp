@@ -87,7 +87,7 @@ void Pilot::pilotdo(int* _p,int* _s,int* _pv,int* _sv) {
 
 		_raw_yaw = sl_constrain(_raw_yaw, -50, 50);
 
-		if (abs(_hdg_Error) > _heading_deadband){
+		if (sl_abs(_hdg_Error) > _heading_deadband){
 			*_p = rov->_midpoint[PORT_INDEX] + _raw_yaw;
 			*_s = rov->_midpoint[STARBORD_INDEX] - _raw_yaw;
 		}

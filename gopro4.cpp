@@ -168,8 +168,6 @@ gopro4::gopro4(int trans_t):_conn(4096,16){
 	_vd_off_func = NULL;
 	_vd_off_data = NULL;
 	
-	_wifi->onEvent(WPA_EVENT_CONNECTED,gopro4::onWifiConnected,this);
-	_wifi->onEvent(WPA_EVENT_DISCONNECTED,gopro4::onWifiDisconnected,this);		
 }
 
 gopro4::~gopro4() {
@@ -253,6 +251,9 @@ bool gopro4::init() {
 		return false;
 	}
 	_isWifiConnect = false;
+	_wifi->onEvent(WPA_EVENT_CONNECTED,gopro4::onWifiConnected,this);
+	_wifi->onEvent(WPA_EVENT_DISCONNECTED,gopro4::onWifiDisconnected,this);		
+
 #endif	
 	
 	return true;
@@ -322,7 +323,7 @@ void gopro4::onWifiConnected(int level,const char* msg,void* data) {
 		_gopro4->start();
 
 		
-		sprintf(buf2,"{\"name\":\"wifi_event_connected\",\"args\":\"\s\"}",_gopro4->_ssid);
+		sprintf(buf2,"{\"name\":\"wifi_event_connected\",\"args\":\"%s\"}",_gopro4->_ssid);
 		slglobal.server->broadcast(9,buf2);
 	}
 }
@@ -848,13 +849,13 @@ rapidjson::StringBuffer& gopro4::wifi_scan_results(rapidjson::StringBuffer& p) {
 	list<wifi_scan*> _wifi_scans;
 
 	if(_wifi->getAvaiableWifi(&_wifi_scans) == true) {
-		for(list<wifi_scan*>::node* _p = _wifi_scans.begin(); _p != _wifi_scans.end(); _p = _p -> next;) {
+		for(list<wifi_scan*>::node* _p = _wifi_scans.begin(); _p != _wifi_scans.end(); _p = _p -> next) {
 			rapidjson::Value _l(rapidjson::kObjectType);
 
-			_l.AddMember("ssid",rapidjson::Value().SetString(_p.element->ssid,d.GetAllocator()),d.GetAllocator());
-			_l.AddMember("frequency",rapidjson::Value().SetInt(_p.element->frequency),d.GetAllocator());
-			_l.AddMember("signal",rapidjson::Value().SetInt(_p.element->signal_level),d.GetAllocator());
-			sprintf(_buf,"%2x:%2x:%2x:%2x:%2x:%2x",_p.element->bssid[0]&0xff,_p.element->bssid[1]&0xff,_p.element->bssid[2]&0xff,_p.element->bssid[3]&0xff,_p.element->bssid[4]&0xff,_p.element->bssid[5]&0xff);
+			_l.AddMember("ssid",rapidjson::Value().SetString(_p->element->ssid,d.GetAllocator()),d.GetAllocator());
+			_l.AddMember("frequency",rapidjson::Value().SetInt(_p->element->frequency),d.GetAllocator());
+			_l.AddMember("signal",rapidjson::Value().SetInt(_p->element->signal_level),d.GetAllocator());
+			sprintf(_buf,"%2x:%2x:%2x:%2x:%2x:%2x",_p->element->bssid[0]&0xff,_p->element->bssid[1]&0xff,_p->element->bssid[2]&0xff,_p->element->bssid[3]&0xff,_p->element->bssid[4]&0xff,_p->element->bssid[5]&0xff);
 			_l.AddMember("mac",rapidjson::Value().SetString(_buf,d.GetAllocator()),d.GetAllocator());
 
 			args.PushBack(_l,d.GetAllocator());

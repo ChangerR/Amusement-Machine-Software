@@ -2,7 +2,7 @@ CFLAG = -c -O0 -g -I /opt/ffmpeg/include
 LKFLAG = -lcurl -lpthread -L /opt/ffmpeg/lib 
 
 OBJS = arduino_cmd.o serial-linux.o hardware.o slrov.o HttpStream.o HttpUrlConnection.o \
-	  ServerConfig.o slclient.o slserver.o gopro4.o gopro_plan_queue.o main.o wifi_manager.o 
+	  ServerConfig.o slclient.o slserver.o gopro4.o gopro_plan_queue.o main.o wifi_manager.o pilot.o  
 
 WPA_OBJS =	wpa_ctrl/os_unix.o wpa_ctrl/wpabuf.o wpa_ctrl/wpa_debug.o wpa_ctrl/common.o wpa_ctrl/wpa_ctrl.o 
 

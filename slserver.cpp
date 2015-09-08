@@ -73,6 +73,9 @@ SlServer::~SlServer() {
 		winsock_close();
 	}
 #endif
+	if(server != INVALID_SOCKET)
+		closesocket(server);
+
 	if (_planqueue)
 		delete _planqueue;
 	if(poilt) {

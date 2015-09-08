@@ -8,7 +8,7 @@
 #ifdef SLSERVER_WIN32
 #include <windows.h>
 #endif
-
+#include "global.h"
 #include "slserver.h"
 
 GoproPlanQueue::GoproPlanQueue() {
@@ -118,11 +118,11 @@ void* GoproPlanQueue::_run_queue(void*  user) {
 				char _ssid[64],*_pssid = _ssid;
 				
 				while(*cp && *cp != ')')
-					*_pssid++ = *_ssid;
+					*_pssid++ = *cp++;
 				
 				*_pssid = 0;
 				
-				pointer->_gopro4->connectWifi(_ssid);
+				pointer->_gopro4->connectWifi(_ssid,NULL);
 				
 			} else if(strcmp(cp,"disconnect_wifi") == 0 ) {
 				

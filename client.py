@@ -31,7 +31,7 @@ class recviver(threading.Thread): #The timer class is derived from the class thr
 			s = sock.recv(256)
 			print 'recv'+s
 			lock.acquire()
-			output.AppendText(s)
+			#output.AppendText(s)
 			lock.release()
 		
     def stop(self):  
