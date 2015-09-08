@@ -11,6 +11,10 @@
 #include "wifi_manager.h"
 #endif
 
+#include "json/document.h"
+#include "json/writer.h"
+#include "json/stringbuffer.h"
+
 #define GOPRO4_UDP_PORT 8554
 #define GOPRO4_MAP_PORT 9000
 #define GOPRO4_IP "10.5.5.9"
@@ -35,7 +39,9 @@ public:
 	static void onWifiConnected(int level,const char* msg,void* data);
 	static void onWifiDisconnected(int level,const char* msg,void* data);
 
-	char* wifi_scan_results(char* p);
+	rapidjson::StringBuffer& wifi_scan_results(rapidjson::StringBuffer& p);
+	
+	bool connectWifi(const char* ssid,const char* psk);
 #endif
 	void stop();
 	

@@ -73,6 +73,7 @@ int main(int args,char** argv) {
 #else
 	INIT_GLOBAL_FRAME_LOCK;
 #endif
+
 	slglobal.is_stream_running = false;
 	slglobal.frame = NULL;
 	slglobal.frame_size = 0;
@@ -135,7 +136,9 @@ int main(int args,char** argv) {
 	if (pserver->start() == false) {
 		goto end;
 	}
-
+	
+	slglobal.server = pserver;
+	
 #ifdef SLSERVER_WIN32
 	LOGOUT("***INFO*** Please Input A Char To Stop This Server\n");
 	getc(stdin);

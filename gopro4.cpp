@@ -12,9 +12,6 @@
 #include <errno.h>
 #include "global.h"
 
-#include "json/document.h"
-#include "json/writer.h"
-#include "json/stringbuffer.h"
 
 #ifdef SLSERVER_LINUX
 #ifndef INT64_C
@@ -155,9 +152,11 @@ gopro4::gopro4(int trans_t):_conn(4096,16){
 	_heartbeat_sender = INVALID_SOCKET; 
 	_recv_buffer = new char[MAX_BUFFER_LEN];
 	_trans_type = trans_t;
+	
 #ifdef SLSERVER_LINUX
 	_wifi = NULL;
 #endif
+
 	if (ffmpeg_init <= 0)
 	{
 		av_register_all();
@@ -168,6 +167,9 @@ gopro4::gopro4(int trans_t):_conn(4096,16){
 	_vd_on_data = NULL;
 	_vd_off_func = NULL;
 	_vd_off_data = NULL;
+	
+	_wifi->onEvent(WPA_EVENT_CONNECTED,gopro4::onWifiConnected,this);
+	_wifi->onEvent(WPA_EVENT_DISCONNECTED,gopro4::onWifiDisconnected,this);		
 }
 
 gopro4::~gopro4() {
@@ -257,6 +259,8 @@ bool gopro4::init() {
 }
 
 #ifdef SLSERVER_LINUX
+
+#if 0
 bool gopro4::start2() {
 	wifi_status t_status;
 	bool ret = false;
@@ -291,6 +295,7 @@ bool gopro4::start2() {
 	
 	return ret;
 }
+#endif
 
 void gopro4::onWifiConnected(int level,const char* msg,void* data) {
 	gopro4* _gopro4 = (gopro4*)data;
@@ -302,7 +307,7 @@ void gopro4::onWifiConnected(int level,const char* msg,void* data) {
 		return;
 	}
 	
-	if(strcmp(t_status.ssid,_gopro4->_ssid) == 0) {
+	if(_gopro4->_ssid[0] != 0) {
 		char buf[32];
 		char buf2[64];
 		
@@ -313,7 +318,12 @@ void gopro4::onWifiConnected(int level,const char* msg,void* data) {
 		LOGOUT("***INFO*** %s\n",buf2);
 		system(buf2);
 		_gopro4->_isWifiConnect = true;
+		
 		_gopro4->start();
+
+		
+		sprintf(buf2,"{\"name\":\"wifi_event_connected\",\"args\":\"\s\"}",_gopro4->_ssid);
+		slglobal.server->broadcast(9,buf2);
 	}
 }
 
@@ -322,6 +332,8 @@ void gopro4::onWifiDisconnected(int level,const char* msg,void* data) {
 	LOGOUT("***ERROR*** wifi disconnect\n");
 	
 	_gopro4->_isWifiConnect = false;
+	
+	slglobal.server->broadcast(9,"{\"name\":\"wifi_event_disconnected\",\"args\":\"[]\"}");
 }
 #endif
 
@@ -847,7 +859,7 @@ rapidjson::StringBuffer& gopro4::wifi_scan_results(rapidjson::StringBuffer& p) {
 
 			args.PushBack(_l,d.GetAllocator());
 		}
-
+		clearWifiList(&_wifi_scans);
 	}
 
 	d.AddMember("args",args,d.GetAllocator());
@@ -857,4 +869,49 @@ rapidjson::StringBuffer& gopro4::wifi_scan_results(rapidjson::StringBuffer& p) {
 	
 	return p;
 }
+
+bool gopro4::connectWifi(const char* ssid,const char* psk) {
+	wifi_status t_status;
+	bool ret = false;
+	memset(&t_status,0,sizeof(wifi_status));
+	
+	do {
+		if(_wifi == NULL)
+			break;
+		
+		if(_wifi->getWifiStatus(&t_status) == false) {
+			LOGOUT("***ERROR*** wifi interface get wifi status failed\n");
+			break;
+		}
+		
+		if(strcmp(t_status.ssid,ssid) == 0) {
+			
+			ret = true;
+			_isWifiConnect = true;
+			this->start();
+			
+		}else{
+			
+			if(_wifi->connectWifi(ssid) == false) {
+				LOGOUT("***INFO*** cannot connect wifi,try to set\n");
+				
+				if(psk == NULL) {
+					if(strcmp(ssid,_ssid) == 0)
+						psk = _psk;
+				} else {
+					LOGOUT("***INFO*** cannot connect %s,please set passwd\n",ssid);
+				}
+				
+				if(_wifi->addWifiNetwork(ssid,psk) == false)
+					break;
+				
+				ret = _wifi->connectWifi(ssid);
+			}else
+				ret = true;
+		}
+	}while(0);	
+	
+	return ret;
+}
+
 #endif

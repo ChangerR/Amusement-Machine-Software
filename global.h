@@ -8,6 +8,8 @@
 #include <pthread.h>
 #endif
 
+class SlServer;
+
 struct SlGlobal {
 	bool is_stream_running;
 #ifdef SLSERVER_LINUX
@@ -20,6 +22,7 @@ struct SlGlobal {
 	int frame_alloc_size;
 	long frame_count;
 	ServerConfig* pConfig;
+	SlServer* server;
 #ifdef SLSERVER_LINUX
 	bool global_running;
 #endif

@@ -5,6 +5,8 @@
 #include <pthread.h>
 #include "gopro4.h"
 
+class SlServer;
+
 class GoproPlanQueue {
 public:
 	GoproPlanQueue();
@@ -22,7 +24,7 @@ private:
 	struct _plan {
 		char name[128];
 	};
-	
+	SlServer* _server;
 	list<_plan*> _queue;
 	pthread_t _thread;
 	bool _running;
