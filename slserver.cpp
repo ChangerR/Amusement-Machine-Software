@@ -329,6 +329,10 @@ void* SlServer::recv_data(void* data) {
 						pthread_mutex_lock(&pointer->_clients_write_mutex);
 						p->element->write("SLOK:::\r\n",9);
 						pthread_mutex_unlock(&pointer->_clients_write_mutex);
+						
+						if(slglobal.is_stream_running)
+							p->element->write("9:::{\"name\":\"stream_on\",\"args\":[]}");
+						
 					}else if(p->element->http_connect()) {
 						p->element->do_http();
 					}else {

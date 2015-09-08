@@ -310,7 +310,7 @@ void gopro4::onWifiConnected(int level,const char* msg,void* data) {
 	
 	if(_gopro4->_ssid[0] != 0) {
 		char buf[32];
-		char buf2[64];
+		char buf2[128];
 		
 		get_file_from_path(_gopro4->_wifi_ctrl_iface,buf);
 		
@@ -325,6 +325,9 @@ void gopro4::onWifiConnected(int level,const char* msg,void* data) {
 		
 		sprintf(buf2,"{\"name\":\"wifi_event_connected\",\"args\":\"%s\"}",_gopro4->_ssid);
 		slglobal.server->broadcast(9,buf2);
+		
+		sprintf(buf2,"{\"name\":\"wifi_status\",\"args\":[{\"ssid\":\"%s\",\"signal\":0.8}]}",_gopro4->_ssid);
+		slglobal.server->broadcast(9,buf2);
 	}
 }
 
@@ -335,6 +338,7 @@ void gopro4::onWifiDisconnected(int level,const char* msg,void* data) {
 	_gopro4->_isWifiConnect = false;
 	
 	slglobal.server->broadcast(9,"{\"name\":\"wifi_event_disconnected\",\"args\":\"[]\"}");
+	slglobal.server->broadcast(9,"{\"name\":\"wifi_status\",\"args\":\"[]\"}");
 }
 #endif
 
@@ -425,8 +429,6 @@ void* gopro4::transfer_stream(void* data) {
 		return NULL;
 	}
 
-	if(pointer->_vd_on_func != NULL)
-		(*pointer->_vd_on_func)(pointer->_vd_on_data);
 	
 	if (avformat_find_stream_info(pFormatCtx, NULL) < 0)
 	{
@@ -504,6 +506,9 @@ void* gopro4::transfer_stream(void* data) {
 	if (slglobal.frame == NULL)
 		slglobal.frame = (unsigned char*)malloc(slglobal.frame_alloc_size);
 
+	if(pointer->_vd_on_func != NULL)
+		(*pointer->_vd_on_func)(pointer->_vd_on_data);
+	
 	while(pointer->_trans_running) {
 		
 		if (av_read_frame(pFormatCtx, packet) >= 0)
