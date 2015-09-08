@@ -12,6 +12,10 @@
 #include <errno.h>
 #include "global.h"
 
+#include "json/document.h"
+#include "json/writer.h"
+#include "json/stringbuffer.h"
+
 #ifdef SLSERVER_LINUX
 #ifndef INT64_C
 #define INT64_C
@@ -818,3 +822,39 @@ void gopro4::setVideoOff(video_handler _f,void* data) {
 	_vd_off_func = _f;
 	_vd_off_data = data;
 }
+
+#ifdef SLSERVER_LINUX
+rapidjson::StringBuffer& gopro4::wifi_scan_results(rapidjson::StringBuffer& p) {
+	rapidjson::Document d;
+	char _buf[64] = {0};
+	d.SetObject();
+
+	d.AddMember("name",rapidjson::Value().SetString("wifi_scan_results"),d.GetAllocator());
+
+	rapidjson::Value args(rapidjson::kArrayType);
+
+	list<wifi_scan*> _wifi_scans;
+
+	if(_wifi->getAvaiableWifi(&_wifi_scans) == true) {
+		for(list<wifi_scan*>::node* _p = _wifi_scans.begin(); _p != _wifi_scans.end(); _p = _p -> next;) {
+			rapidjson::Value _l(rapidjson::kObjectType);
+
+			_l.AddMember("ssid",rapidjson::Value().SetString(_p.element->ssid,d.GetAllocator()),d.GetAllocator());
+			_l.AddMember("frequency",rapidjson::Value().SetInt(_p.element->frequency),d.GetAllocator());
+			_l.AddMember("signal",rapidjson::Value().SetInt(_p.element->signal_level),d.GetAllocator());
+			sprintf(_buf,"%2x:%2x:%2x:%2x:%2x:%2x",_p.element->bssid[0]&0xff,_p.element->bssid[1]&0xff,_p.element->bssid[2]&0xff,_p.element->bssid[3]&0xff,_p.element->bssid[4]&0xff,_p.element->bssid[5]&0xff);
+			_l.AddMember("mac",rapidjson::Value().SetString(_buf,d.GetAllocator()),d.GetAllocator());
+
+			args.PushBack(_l,d.GetAllocator());
+		}
+
+	}
+
+	d.AddMember("args",args,d.GetAllocator());
+	rapidjson::Writer<rapidjson::StringBuffer> writer(p);
+
+	d.Accept(writer);
+	
+	return p;
+}
+#endif

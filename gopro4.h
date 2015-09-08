@@ -34,6 +34,8 @@ public:
 	bool start2();
 	static void onWifiConnected(int level,const char* msg,void* data);
 	static void onWifiDisconnected(int level,const char* msg,void* data);
+
+	char* wifi_scan_results(char* p);
 #endif
 	void stop();
 	
@@ -50,6 +52,7 @@ public:
 	
 	void setVideoOn(video_handler _f,void* data);
 	void setVideoOff(video_handler _f,void* data);
+	
 #if 0
 	static bool _init_mac;
 	static unsigned char _smac[];

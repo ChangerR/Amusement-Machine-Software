@@ -93,11 +93,19 @@ void* GoproPlanQueue::_run_queue(void*  user) {
 				pointer->_gopro4->start();
 #endif
 				LOGOUT("***INFO*** gopro start\n");
-			}
-			else if (strcmp(cp, "stop") == 0) {
+			} else if (strcmp(cp, "stop") == 0) {
 				LOGOUT("***INFO*** gopro stop\n");
 				pointer->_gopro4->stop();
-			}
+			} 
+#ifdef SLSERVER_LINUX
+			else if(strcmp(cp,"wifi_scan") == 0) {
+
+			} else if(strncmp(cp,"connect_wifi(",13) == 0) {
+			
+			} else if(strcmp(cp,"disconnect_wifi") == 0 ) {
+			
+			} 
+#endif
 			else if (pointer->_gopro4->test_is_work())
 			{
 				pointer->_gopro4->runCommand(cp);
