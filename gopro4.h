@@ -42,6 +42,8 @@ public:
 	rapidjson::StringBuffer& wifi_scan_results(rapidjson::StringBuffer& p);
 	
 	bool connectWifi(const char* ssid,const char* psk);
+	
+	void broadcastWifiStatus();
 #endif
 	void stop();
 	

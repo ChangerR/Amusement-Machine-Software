@@ -10,6 +10,7 @@
 #endif
 #include "global.h"
 #include "slserver.h"
+#include <sys/time.h>
 
 GoproPlanQueue::GoproPlanQueue() {
 	_running = false;
@@ -73,7 +74,8 @@ bool GoproPlanQueue::getRunningState() {
 }
 
 void* GoproPlanQueue::_run_queue(void*  user) {
-	
+	struct timeval _now;
+	long _last = 0;
 	GoproPlanQueue* pointer = (GoproPlanQueue*)user;
 	char _queue_buf[1024];
 	
@@ -127,14 +129,26 @@ void* GoproPlanQueue::_run_queue(void*  user) {
 			} else if(strcmp(cp,"disconnect_wifi") == 0 ) {
 				
 				LOGOUT("***WARNING*** we do not use disconnect_wifi\n");
-			} 
+			} else if(strcmp(cp,"wifi_status") == 0) {
+				pointer->_gopro4->broadcastWifiStatus();
+			}
 #endif
 			else if (pointer->_gopro4->test_is_work())
 			{
 				pointer->_gopro4->runCommand(cp);
 			}
 			delete plan;
+		} 
+#ifdef 0
+		else {
+			gettimeofday(&_now,NULL);
+			
+			if(_last < _now.tv_sec) {
+				
+				_last = _now.tv_sec;
+			}
 		}
+#endif
 #ifdef SLSERVER_WIN32
 		Sleep(1);
 #else

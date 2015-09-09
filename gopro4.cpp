@@ -308,7 +308,7 @@ void gopro4::onWifiConnected(int level,const char* msg,void* data) {
 		return;
 	}
 	
-	if(_gopro4->_ssid[0] != 0) {
+	if(t_status.ssid[0] != 0 && !_gopro4->_isWifiConnect) {
 		char buf[32];
 		char buf2[128];
 		
@@ -318,15 +318,16 @@ void gopro4::onWifiConnected(int level,const char* msg,void* data) {
 		
 		LOGOUT("***INFO*** %s\n",buf2);
 		system(buf2);
+		
 		_gopro4->_isWifiConnect = true;
 		
 		_gopro4->start();
 
 		
-		sprintf(buf2,"{\"name\":\"wifi_event_connected\",\"args\":\"%s\"}",_gopro4->_ssid);
+		sprintf(buf2,"{\"name\":\"wifi_event_connected\",\"args\":\"%s\"}",t_status.ssid);
 		slglobal.server->broadcast(9,buf2);
 		
-		sprintf(buf2,"{\"name\":\"wifi_status\",\"args\":[{\"ssid\":\"%s\",\"signal\":0.8}]}",_gopro4->_ssid);
+		sprintf(buf2,"{\"name\":\"wifi_status\",\"args\":[{\"ssid\":\"%s\",\"signal\":0.8}]}",t_status.ssid);
 		slglobal.server->broadcast(9,buf2);
 	}
 }
@@ -340,6 +341,25 @@ void gopro4::onWifiDisconnected(int level,const char* msg,void* data) {
 	slglobal.server->broadcast(9,"{\"name\":\"wifi_event_disconnected\",\"args\":\"[]\"}");
 	slglobal.server->broadcast(9,"{\"name\":\"wifi_status\",\"args\":\"[]\"}");
 }
+
+void gopro4::broadcastWifiStatus() {
+	
+	wifi_status t_status;
+	memset(&t_status,0,sizeof(wifi_status));
+	
+	if(_wifi->getWifiStatus(&t_status) == false) {
+		LOGOUT("***ERROR*** wifi interface get wifi status failed\n");
+		return;
+	}
+	
+	if(t_status.ssid[0] != 0 && !_isWifiConnect) {
+		char pBUf[128];
+		
+		sprintf(pBUf,"{\"name\":\"wifi_status\",\"args\":[{\"ssid\":\"%s\",\"signal\":0.8}]}",t_status.ssid);
+		slglobal.server->broadcast(9,pBUf);
+	}
+}
+
 #endif
 
 #ifdef SLSERVER_WIN32
