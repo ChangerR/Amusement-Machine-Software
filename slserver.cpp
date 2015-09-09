@@ -21,7 +21,7 @@
 #include <net/if.h> 
 #include <netinet/if_ether.h> 
 #endif
-
+#include "global.h"
 #ifdef SLSERVER_WIN32
 #pragma comment(lib,"pthreadVC2.lib")
 #pragma comment(lib,"Iphlpapi")
@@ -331,7 +331,7 @@ void* SlServer::recv_data(void* data) {
 						pthread_mutex_unlock(&pointer->_clients_write_mutex);
 						
 						if(slglobal.is_stream_running)
-							p->element->write("9:::{\"name\":\"stream_on\",\"args\":[]}");
+							p->element->write("9:::{\"name\":\"stream_on\",\"args\":[]}",strlen("9:::{\"name\":\"stream_on\",\"args\":[]}"));
 						
 					}else if(p->element->http_connect()) {
 						p->element->do_http();

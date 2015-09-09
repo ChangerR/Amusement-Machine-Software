@@ -139,7 +139,7 @@ void* GoproPlanQueue::_run_queue(void*  user) {
 			}
 			delete plan;
 		} 
-#ifdef 0
+#if 0
 		else {
 			gettimeofday(&_now,NULL);
 			
