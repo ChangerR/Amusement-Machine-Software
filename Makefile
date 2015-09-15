@@ -1,5 +1,5 @@
-CFLAG = -c -O0 -g -I /opt/ffmpeg/include 
-LKFLAG = -lcurl -lpthread -L /opt/ffmpeg/lib 
+CFLAG = -c -O0 -g -I /opt/include 
+LKFLAG = -lcurl -lpthread -L /opt/lib 
 
 OBJS = arduino_cmd.o serial-linux.o hardware.o slrov.o HttpStream.o HttpUrlConnection.o \
 	  ServerConfig.o slclient.o slserver.o gopro4.o gopro_plan_queue.o main.o wifi_manager.o pilot.o  

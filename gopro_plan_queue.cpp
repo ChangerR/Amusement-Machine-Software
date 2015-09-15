@@ -14,7 +14,7 @@
 
 GoproPlanQueue::GoproPlanQueue() {
 	_running = false;
-	_gopro4 = new gopro4;
+	_gopro4 = new gopro4(GOPRO4_TRANSFER_PORT);
 }
 
 GoproPlanQueue::~GoproPlanQueue() {
