@@ -85,11 +85,11 @@ private:
 	bool _is_working;
 	int _trans_type;
 	class Client {
-	public:
-		Client();
-		Client(int,const char*);
-		int uid;
-		SOCKADDR_IN sock;
+		public:
+			Client();
+			Client(int,const char*);
+			int uid;
+			SOCKADDR_IN sock;
 	};	
 	list<Client> _clients;
 	bool _trans_running;

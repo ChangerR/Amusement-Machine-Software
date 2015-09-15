@@ -659,6 +659,16 @@ void gopro4::stop() {
 int gopro4::addClient(int uid,const char* ip) {
 	if(_trans_type != GOPRO4_TRANSFER_PORT)
 		return -1;
+	
+	//fix add client more than once 
+	pthread_mutex_lock(&_client_mutex);
+	for(list<Client>::node* p = _clients.begin(); p != _clients.end(); p = p->next) {
+		if( p->element.uid == uid) {
+			return _clients.getSize();
+		}
+	}
+	pthread_mutex_unlock(&_client_mutex);
+	
 	Client c(uid,ip);
 	pthread_mutex_lock(&_client_mutex);
 	_clients.push_back(c);
