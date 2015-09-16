@@ -20,6 +20,7 @@
 #endif
 #endif
 
+#ifdef USE_FFMPEG
 extern "C"
 {
 #include <libavcodec/avcodec.h>
@@ -28,6 +29,7 @@ extern "C"
 #include <libavdevice/avdevice.h>
 #include <libavutil/imgutils.h>
 };
+#endif
 
 #define MAX_BUFFER_LEN 4096
 #include <stdlib.h>
@@ -427,6 +429,7 @@ void* gopro4::transfer(void* user) {
 }
 
 void* gopro4::transfer_stream(void* data) {
+#ifdef USE_FFMPEG
 	gopro4* pointer = (gopro4*)data;
 	AVFormatContext* pFormatCtx;
 	AVCodecContext* pCodecCtx;
@@ -596,7 +599,9 @@ void* gopro4::transfer_stream(void* data) {
 	avformat_close_input(&pFormatCtx);
 	avcodec_close(pJpegCodecCtx);
 	avcodec_free_context(&pJpegCodecCtx);
+#endif
 	LOGOUT("*********tranfer return***************\n");
+	
 	return NULL;
 }
 
