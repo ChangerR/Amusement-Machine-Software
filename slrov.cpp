@@ -39,7 +39,8 @@ slrov::slrov(SlServer* pointer) {
 }
 
 slrov::~slrov() {
-	
+	if(pilot)
+		delete pilot;
 }
 
 int arduino_log(int args, char(*argv)[MAX_CMD_ARGUMENT_LEN], void* user) {
@@ -241,9 +242,11 @@ bool slrov::start(const char* s) {
 		printf("**ERROR*** When create pthread watcher thread,%d\n", errno);
 		return false;
 	}
+	
 	rov->on("log", arduino_log, this);
 	rov->on("MPU9150", recv_mpu9150, this);
 	rov->on("ms5803", recv_ms5803, this);
+	
 	return true;
 }
 
@@ -272,49 +275,62 @@ void slrov::motor_go(int _p,int _s,int _lv,int _rv) {
 }
 
 void* slrov::pid(void* user) {
+	
 	slrov* pointer = (slrov*)user;
 	int _port = 0;
 	int _starboard = 0;
 	int _vertical_left = 0;
 	int _vertical_right = 0;
-
+	struct timeval _now;
+	long _last = 0;
+	
 	while(pointer->running) {
-		if(_ABS(pointer->thr) <= 5&&_ABS(pointer->yaw) <= 5
-			&&_ABS(pointer->lift) <= 5) {	
+		
+		gettimeofday(&_now,NULL);
+					
+		if(_now.tv_usec > _last + 10000) {
 			
-			_port = pointer->_power_delta[POWER_INDEX(_ABS(pointer->thr)) + PORT_INDEX] * _NEG(pointer->thr) + pointer->_midpoint[PORT_INDEX];
-			_starboard = pointer->_power_delta[POWER_INDEX(_ABS(pointer->thr)) + STARBORD_INDEX] * _NEG(pointer->thr) + pointer->_midpoint[STARBORD_INDEX];
-			
-			if(pointer->thr != 0) {
-				_port += pointer->_yaws_stable[_ABS(pointer->yaw)] * _NEG(pointer->yaw);
-				_starboard -= pointer->_yaws_stable[_ABS(pointer->yaw)] * _NEG(pointer->yaw);
-			}else{
-				_port += pointer->_power_delta[POWER_INDEX(_ABS(pointer->yaw)) + PORT_INDEX] * _NEG(pointer->yaw);
-				_starboard -= pointer->_power_delta[POWER_INDEX(_ABS(pointer->yaw)) + STARBORD_INDEX] * _NEG(pointer->yaw);
+			if(_ABS(pointer->thr) <= 5&&_ABS(pointer->yaw) <= 5
+				&&_ABS(pointer->lift) <= 5) {	
+				
+				_port = pointer->_power_delta[POWER_INDEX(_ABS(pointer->thr)) + PORT_INDEX] * _NEG(pointer->thr) + pointer->_midpoint[PORT_INDEX];
+				_starboard = pointer->_power_delta[POWER_INDEX(_ABS(pointer->thr)) + STARBORD_INDEX] * _NEG(pointer->thr) + pointer->_midpoint[STARBORD_INDEX];
+				
+				if(pointer->thr != 0) {
+					_port += pointer->_yaws_stable[_ABS(pointer->yaw)] * _NEG(pointer->yaw);
+					_starboard -= pointer->_yaws_stable[_ABS(pointer->yaw)] * _NEG(pointer->yaw);
+				}else{
+					_port += pointer->_power_delta[POWER_INDEX(_ABS(pointer->yaw)) + PORT_INDEX] * _NEG(pointer->yaw);
+					_starboard -= pointer->_power_delta[POWER_INDEX(_ABS(pointer->yaw)) + STARBORD_INDEX] * _NEG(pointer->yaw);
+				}
+				
+				_vertical_left = pointer->_power_delta[POWER_INDEX(_ABS(pointer->lift)) + VERTICAL_LEFT_INDEX] * _NEG(pointer->lift) + pointer->_midpoint[VERTICAL_LEFT_INDEX];
+				_vertical_right = pointer->_power_delta[POWER_INDEX(_ABS(pointer->lift)) + VERTICAL_RIGHT_INDEX] * _NEG(pointer->lift) + pointer->_midpoint[VERTICAL_RIGHT_INDEX];
+							
+			}
+		////////////////////////////////////////////
+		//this area you can do your pid thing
+			pointer->pilot->pilotdo(&_port,&_starboard,&_vertical_left,&_vertical_right);
+		//////////////////////////////////////////
+			if(_port != pointer->port || _starboard != pointer->starboard || pointer->vertical_left != _vertical_left
+						||pointer->vertical_right != _vertical_right) {
+					pointer->port = _port;
+					pointer->starboard = _starboard;
+					pointer->vertical_left = _vertical_left;
+					pointer->vertical_right = _vertical_right;
+					pointer->motor_go(pointer->port,pointer->starboard,pointer->vertical_left,pointer->vertical_right);
 			}
 			
-			_vertical_left = pointer->_power_delta[POWER_INDEX(_ABS(pointer->lift)) + VERTICAL_LEFT_INDEX] * _NEG(pointer->lift) + pointer->_midpoint[VERTICAL_LEFT_INDEX];
-			_vertical_right = pointer->_power_delta[POWER_INDEX(_ABS(pointer->lift)) + VERTICAL_RIGHT_INDEX] * _NEG(pointer->lift) + pointer->_midpoint[VERTICAL_RIGHT_INDEX];
-						
-		}
-////////////////////////////////////////////
-//this area you can do your pid thing
-		pointer->pilot->pilotdo(&_port,&_starboard,&_vertical_left,&_vertical_right);
-//////////////////////////////////////////
-		if(_port != pointer->port || _starboard != pointer->starboard || pointer->vertical_left != _vertical_left
-					||pointer->vertical_right != _vertical_right) {
-				pointer->port = _port;
-				pointer->starboard = _starboard;
-				pointer->vertical_left = _vertical_left;
-				pointer->vertical_right = _vertical_right;
-				pointer->motor_go(pointer->port,pointer->starboard,pointer->vertical_left,pointer->vertical_right);
-		}
+			_last = _now.tv_usec;
+		} else {
+
 #ifdef SLSERVER_WIN32 
-		Sleep(1);
+			Sleep(1);
 #elif defined(SLSERVER_LINUX)
-		//sched_yield();
-		usleep(1);
+			//sched_yield();
+			usleep(1);
 #endif
+		}
 	}
 	
 	return NULL;

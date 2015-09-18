@@ -3,17 +3,26 @@
 #include "slconfig.h"
 #include "curl/curl.h"
 #include "HttpStream.h"
+
 class HttpUrlConnection {
+	
 public:
 	HttpUrlConnection(u32,u32);
+	
 	virtual ~HttpUrlConnection();
 	
 	bool open(const char*);
-	const char* getResponse();
-	HttpStream* getHttpOutputStream();
 	
+	const char* getResponse();
+	
+	HttpStream* getHttpOutputStream();
+
+protected:	
+
 	static long data_writer_sync(void *data, int size, int nmemb, HttpStream* stream);
+	
 	static long response_writer(void *data, int size, int nmemb, HttpUrlConnection* _urlconn);
+	
 private:
 	HttpStream* outs;
 	char _response[4096];

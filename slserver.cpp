@@ -294,7 +294,7 @@ void* SlServer::recv_data(void* data) {
 								//LOGOUT("***INFO*** UID:%d Client timer clear\n", p->element->uid);
 								break;
 							case '2':
-								LOGOUT("***INFO*** recv msg %s\n", msg);
+								//LOGOUT("***INFO*** recv msg %s\n", msg);
 								pointer->poilt->runcommand(p->element->uid, cp + 4);
 								break;
 							case '3':

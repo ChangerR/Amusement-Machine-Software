@@ -57,25 +57,21 @@ int hardware::write(const char* p) {
 	return len;
 }
 
-//#ifdef SLSERVER_WIN32
 void* __cdecl hardware::recv_thread(void* data) {
-//#else
-//void* hardware::recv_thread(void* data) {
-//#endif
+
 	hardware* t = (hardware*)data;
+	
 	char buf[512];
 	
 	while(t->running) {
 		
 		if(t->serial->readline(buf) != -1 ) {
-			//LOGOUT("***INFO*** SERIAL:%s\n",buf);
 			arduino_cmd::parse_command(buf);
 		}
 		else {
 #ifdef SLSERVER_WIN32
 			Sleep(1);
 #elif defined(SLSERVER_LINUX)
-			//	sched_yield();
 			usleep(1);
 #endif
 		}

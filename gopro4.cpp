@@ -20,7 +20,7 @@
 #endif
 #endif
 
-#ifdef USE_FFMPEG
+#if USE_FFMPEG
 extern "C"
 {
 #include <libavcodec/avcodec.h>
@@ -159,12 +159,15 @@ gopro4::gopro4(int trans_t):_conn(4096,16){
 	_wifi = NULL;
 #endif
 
+#if USE_FFMPEG
 	if (ffmpeg_init <= 0)
 	{
 		av_register_all();
 		avformat_network_init();
 		ffmpeg_init ++ ;
 	}
+#endif
+
 	_vd_on_func = NULL;
 	_vd_on_data = NULL;
 	_vd_off_func = NULL;
@@ -429,7 +432,7 @@ void* gopro4::transfer(void* user) {
 }
 
 void* gopro4::transfer_stream(void* data) {
-#ifdef USE_FFMPEG
+#if USE_FFMPEG
 	gopro4* pointer = (gopro4*)data;
 	AVFormatContext* pFormatCtx;
 	AVCodecContext* pCodecCtx;

@@ -22,13 +22,14 @@ long HttpUrlConnection::response_writer(void *data, int size, int nmemb, HttpUrl
 }
 
 HttpUrlConnection::HttpUrlConnection(u32 page_size,u32 page_count){	
-	outs = NULL;
+	outs = new HttpStream(_page_size, _page_count);
 	_wpos = 0;
 	_page_size = page_size;
 	_page_count = page_count;
 	handler = curl_easy_init();
 }
 HttpUrlConnection::~HttpUrlConnection() {
+	
 	curl_easy_cleanup(handler);
 	if (outs)
 		delete outs;
@@ -39,22 +40,27 @@ bool HttpUrlConnection::open(const char* url) {
 	_wpos = 0;
 	memset(_response,0,4096);
 	
-	//outs->clear();
-	if (outs)
-		delete outs;
+	outs->clear();
+	//if (outs)
+	//	delete outs;
 
-	outs = new HttpStream(_page_size, _page_count);
+	//outs = new HttpStream(_page_size, _page_count);
 
 	curl_easy_setopt(handler, CURLOPT_URL, url);
 	curl_easy_setopt(handler, CURLOPT_VERBOSE, 1L);
 	curl_easy_setopt(handler,CURLOPT_FOLLOWLOCATION,1);
-	/// 保存body文件
+
 	curl_easy_setopt(handler, CURLOPT_WRITEFUNCTION, HttpUrlConnection::data_writer_sync);
 	curl_easy_setopt(handler, CURLOPT_WRITEDATA, outs);
-	/// 保存服务器返回的响应消息
+
+	curl_easy_setopt(handler, CURLOPT_TIMEOUT_MS, 500L);
+
 	curl_easy_setopt(handler, CURLOPT_HEADERFUNCTION, HttpUrlConnection::response_writer);
 	curl_easy_setopt(handler, CURLOPT_WRITEHEADER, this);
+	
+	
 	CURLcode res = CURLE_OK;
+	
 	int retcode = 0;
 	res = curl_easy_perform(handler);
 	res = curl_easy_getinfo(handler, CURLINFO_RESPONSE_CODE , &retcode);

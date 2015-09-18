@@ -59,6 +59,8 @@ typedef int SOCKET;
 #define RESET_GPIO_VALUE "/sys/class/gpio/gpio18/value"
 #endif
 
+#define USE_FFMPEG 0
+
 #ifdef SLSERVER_WIN32
 #include <winsock2.h>
 #include <windows.h>
